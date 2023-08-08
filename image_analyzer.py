@@ -5,7 +5,9 @@ import os
 
 def moving_average(data, window_size=5):
     """Compute moving average."""
-    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+    window = np.ones(int(window_size))/float(window_size) # boxcar kernel
+    # window = np.exp(-np.linspace(-1, 1, window_size)**2) # Gaussian kernel (broken)
+    return np.convolve(data, window, mode='valid')
 
 def extract_temp_values_from_filename(filename):
     values = filename.split("_")
@@ -56,16 +58,22 @@ image_files.sort()  # To ensure consistent ordering
 
 # Extract temperatures along y=245 for each image
 temperatures_data_reversed = []
+temperatures_at_262 = []
+
 for img_file in image_files:
     img_path = os.path.join(folder_path, img_file)
     time_heated, max_temp, min_temp = extract_temp_values_from_filename(img_file)
-    temperatures = get_averaged_temperatures_along_y(img_path, 245, max_temp, min_temp)  # <-- This line is changed
+    temperatures = get_averaged_temperatures_along_y(img_path, 245, max_temp, min_temp)
     temperatures_data_reversed.append((time_heated, temperatures))
+    
+    # Extracting temperature at x=262
+    temperature_262 = temperatures[262]
+    temperatures_at_262.append((time_heated, temperature_262))
 
 # Sort data by heating time
 temperatures_data_reversed.sort(key=lambda x: x[0])
 
-# Plot with smoothed data
+# Plot smoothed temperature profiles along y=245
 cmap = plt.get_cmap("viridis", len(temperatures_data_reversed))
 plt.figure(figsize=(12, 6))
 
@@ -74,10 +82,36 @@ for index, (time_heated, temps) in enumerate(temperatures_data_reversed):
     plt.plot(smoothed_temps, label=f"{time_heated}s", color=cmap(index))
 
 plt.title(folder_path)
-plt.ylim(20, 160)
-plt.xlabel("Pixel Position")
+plt.xlim(100, 635)
+plt.ylim(20, 120)
+plt.xlabel("pixel position")
 plt.ylabel("temperature (°C)")
-plt.legend(title="Irradiation Time")
+plt.legend(title="irradiation time")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# Scatterplot of temperatures at x=262 against irradiation time
+times = [item[0] for item in temperatures_at_262]
+temps_262 = [item[1] for item in temperatures_at_262]
+
+# Compute the linear trendline
+slope, intercept = np.polyfit(times[0:7], temps_262[0:7], 1)
+trendline = [slope * x + intercept for x in times]
+
+plt.figure(figsize=(8, 6))
+plt.scatter(times, temps_262, color='blue')
+plt.plot(times, trendline, color='red', linestyle='--')  # Plotting the trendline
+
+# Display the equation on the plot
+equation = f"y = {slope:.3f}x + {intercept:.3f}"
+plt.text(min(times), max(temps_262), equation, color='red', verticalalignment='top')
+
+plt.ylim(20, 90)
+plt.xlim(0, 800)
+plt.title(f"Temperature at Pixel Position 262 for {folder_path}")
+plt.xlabel("Irradiation Time (s)")
+plt.ylabel("temperature (°C)")
 plt.grid(True)
 plt.tight_layout()
 plt.show()
