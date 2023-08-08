@@ -45,14 +45,14 @@ def get_averaged_temperatures_along_y(img_path, y_value, max_temp, min_temp):
     
 
 # Assuming the scale bar is from the image named "300_905_212.jpg"
-scale_bar_image = Image.open("0cb_s184/300_905_212.jpg")
+scale_bar_image = Image.open(r"image-inputs\0cb_s182\000_310_197.jpg")
 left, top, right, bottom = 65, 453, 574, 458
 cropped_img = scale_bar_image.crop((left, top, right, bottom))
 img_array = np.array(cropped_img)
 average_colors = np.mean(img_array, axis=0)
 
 # Read all images in the folder
-folder_path = "0cb_s184"
+folder_path = r"image-inputs\0cb_s184"
 image_files = [f for f in os.listdir(folder_path) if f.endswith(".jpg")]
 image_files.sort()  # To ensure consistent ordering
 
@@ -82,7 +82,7 @@ for index, (time_heated, temps) in enumerate(temperatures_data_reversed):
     plt.plot(smoothed_temps, label=f"{time_heated}s", color=cmap(index))
 
 plt.title(folder_path)
-plt.xlim(100, 635)
+plt.xlim(100, 700)
 plt.ylim(20, 120)
 plt.xlabel("pixel position")
 plt.ylabel("temperature (°C)")
@@ -100,8 +100,15 @@ slope, intercept = np.polyfit(times[0:7], temps_262[0:7], 1)
 trendline = [slope * x + intercept for x in times]
 
 plt.figure(figsize=(8, 6))
-plt.scatter(times, temps_262, color='blue')
-plt.plot(times, trendline, color='red', linestyle='--')  # Plotting the trendline
+
+# Plot the points used for the trendline in a darker color
+plt.scatter(times[0:7], temps_262[0:7], color='red', label="linear fit points")
+
+# Plot the other points in a lighter color
+plt.scatter(times[7:], temps_262[7:], color='blue', label="excluded points")
+
+# Plotting the trendline
+plt.plot(times, trendline, color='red', linestyle='--')  
 
 # Display the equation on the plot
 equation = f"y = {slope:.3f}x + {intercept:.3f}"
@@ -109,9 +116,28 @@ plt.text(min(times), max(temps_262), equation, color='red', verticalalignment='t
 
 plt.ylim(20, 90)
 plt.xlim(0, 800)
-plt.title(f"Temperature at Pixel Position 262 for {folder_path}")
-plt.xlabel("Irradiation Time (s)")
+plt.title(f"temperature at pixel position 262 for {folder_path}")
+plt.xlabel("irradiation time (s)")
 plt.ylabel("temperature (°C)")
+plt.legend()
 plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# Displaying each image with the overlaid cross-sectional line
+fig, ax = plt.subplots(figsize=(14, 10))
+y_value = 245  # This is the y-value of the cross-section
+
+for img_file in image_files:
+    img_path = os.path.join(folder_path, img_file)
+    img = Image.open(img_path)
+    ax.imshow(img, alpha=0.7)
+    
+    # Draw the cross-sectional line
+    ax.plot([0, img.width], [y_value, y_value], color='red', linestyle='--')
+
+# Setting title and other properties
+ax.set_title(f"Images with Cross-sectional Line from {folder_path}")
+ax.axis('off')  # Hide the axis values and ticks
 plt.tight_layout()
 plt.show()
