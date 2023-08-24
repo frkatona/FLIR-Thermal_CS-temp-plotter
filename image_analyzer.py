@@ -82,8 +82,8 @@ for index, (time_heated, temps) in enumerate(temperatures_data_reversed):
     plt.plot(smoothed_temps, label=f"{time_heated}s", color=cmap(index))
 
 plt.title(folder_path)
-plt.xlim(100, 700)
-plt.ylim(20, 120)
+plt.xlim(100, 650)
+plt.ylim(20, 60)
 plt.xlabel("pixel position")
 plt.ylabel("temperature (°C)")
 plt.legend(title="irradiation time")
@@ -114,8 +114,8 @@ plt.plot(times, trendline, color='red', linestyle='--')
 equation = f"y = {slope:.3f}x + {intercept:.3f}"
 plt.text(min(times), max(temps_262), equation, color='red', verticalalignment='top')
 
-plt.ylim(20, 90)
-plt.xlim(0, 800)
+plt.ylim(20, 60)
+plt.xlim(0, 100)
 plt.title(f"temperature at pixel position 262 for {folder_path}")
 plt.xlabel("irradiation time (s)")
 plt.ylabel("temperature (°C)")
