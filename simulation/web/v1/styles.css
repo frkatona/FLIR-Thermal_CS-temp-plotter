@@ -1,0 +1,60 @@
+body, label, p, button {
+  font-family: 'Arial', sans-serif;
+}
+
+#mainWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#boxColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+#canvasWrapper {
+  position: relative;
+  text-align: center;
+}
+
+.tickMark {
+  position: absolute;
+  background-color: black;
+}
+
+#controlsBox {
+  border: 1px solid black;
+  padding: 1em;
+  margin: 1em;
+  text-align: left;
+}
+
+#buttonWrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1em;
+}
+
+button {
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+}
+
+#timeDisplay {
+  font-size: 24px;
+}
+
+#scaleWrapper {
+  width: 10%;
+  height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scaleBlock {
+  width: 100%;
+  flex: 1;
+}

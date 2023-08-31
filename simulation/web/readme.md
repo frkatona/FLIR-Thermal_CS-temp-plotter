@@ -1,0 +1,11 @@
+# to-do
+- general
+ - font sans serif better font family
+- simulation space
+ - black box
+ - color scale bar mapping and discretizing optimization
+- input boxes
+ - within a box
+ - oriented 1 per line
+ - icons
+ - style

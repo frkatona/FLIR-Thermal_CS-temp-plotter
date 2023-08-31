@@ -1,0 +1,81 @@
+body, label, p, button {
+    font-family: 'Arial', sans-serif;
+  }
+  
+  #mainWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  #simulationWrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  #controlsBox, #infoBox {
+    border: 1px solid black;
+    padding: 1em;
+    margin: 1em;
+    text-align: left;
+  }
+  
+  #controlsBox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  #controlsBox div {
+    margin-bottom: 10px;
+  }
+  
+  #canvasWrapper {
+    position: relative;
+    text-align: center;
+  }
+  
+#time{
+    position: absolute;
+    top: 25%;
+    left: 20%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+}
+  
+  #playPause {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+  #playRestart{
+    position: absolute;
+    top: 60%;
+    left: 45%;
+    transform: translate(-50%, -50%);
+  }
+  
+  #scaleWrapper {
+    margin-left: 20px;
+  }
+  
+  .scaleBlock {
+    width: 20px;
+  }
+  
+  #scaleMin, #scaleMax {
+    width: 100%;
+    text-align: center;
+  }
+  
+  button {
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+  }
+  
