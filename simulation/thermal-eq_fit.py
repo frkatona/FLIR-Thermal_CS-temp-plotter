@@ -27,13 +27,11 @@ y = np.linspace(0, cube_length_m, Ny)
 z = np.linspace(0, cube_length_m, Nz)
 X, Y, Z = np.meshgrid(x, y, z)
 
-# Heat source parameters
-z_end_fraction = 0.2
+## heat source with exponentially decaying power to emulate laser absorption ##
+z_end_fraction = 0.2 # fraction of cube length where heat source is at 10% of original value
 z_end = z_end_fraction * cube_length_m
-alpha = np.log(0.1) / -z_end
-
-# Modify heat source term to account for attenuation and limited depth
-q = Q / (np.sqrt(2 * np.pi) * cylinder_radius_m) * np.exp(-((X - cube_length_m / 2)**2 + (Y - cube_length_m / 2)**2)) * np.exp(alpha * (cube_length_m - Z))
+abs_coeff = np.log(0.1) / -z_end
+q = Q / (np.sqrt(2 * np.pi) * cylinder_radius_m) * np.exp(-((X - cube_length_m / 2)**2 + (Y - cube_length_m / 2)**2)) * np.exp(abs_coeff * (cube_length_m - Z))
 q[Z < cube_length_m - z_end] = 0
 
 def compute_T_3D_RK(output_times):
@@ -80,7 +78,6 @@ def compute_T_3D_RK(output_times):
         T_new[:, -1, :] = T_edge
         T_new[:, :, 0] = T_edge
         T_new[:, :, -1] = T_new[:, :, -1] - h_conv * (T_new[:, :, -1] - T_air) * dt / (dz)
-
         T = T_new
         if n in output_indices:
             output_temperatures.append(T.copy())
