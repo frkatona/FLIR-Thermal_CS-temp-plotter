@@ -1,12 +1,5 @@
 body, label, p, button {
-    font-family: 'Arial', sans-serif;
-  }
-  
-#header{
-  text-align: center;
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 20px;
+  font-family: 'Arial', sans-serif;
 }
 
 #mainWrapper {

@@ -5,15 +5,15 @@ document.addEventListener("DOMContentLoaded", function() {
   const dx = 1;
   let running = false;
   let timeElapsed = 0;
-  let T, power, circleRadius, centerX, centerY, dt, alpha;
+
+  let T, circleRadius, centerX, centerY, dt, alpha;
 
   function initializeSimulation() {
+    const T0Circle = parseFloat(document.getElementById("T0Circle").value);
     const T0Rest = parseFloat(document.getElementById("T0Rest").value);
-    power = parseFloat(document.getElementById("circle_power").value);
     circleRadius = Math.floor(size * parseFloat(document.getElementById("circleRadius").value));
     dt = parseFloat(document.getElementById("t_stepSize").value);
     alpha = parseFloat(document.getElementById("thermalDiffusivity").value);
-
 
     if (alpha < 0) {
       alert("Thermal diffusivity cannot be negative.");
@@ -23,6 +23,15 @@ document.addEventListener("DOMContentLoaded", function() {
     T = Array.from({ length: size }, () => Array(size).fill(T0Rest));
     centerX = Math.floor(size / 2);
     centerY = Math.floor(size / 2);
+
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        const distance = Math.sqrt(Math.pow(i - centerX, 2) + Math.pow(j - centerY, 2));
+        if (distance <= circleRadius) {
+          T[i][j] = T0Circle;
+        }
+      }
+    }
   }
 
   const colors = [
@@ -69,16 +78,6 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
 
-    // Simulate constant power source in the circle
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const distance = Math.sqrt(Math.pow(i - centerX, 2) + Math.pow(j - centerY, 2));
-        if (distance <= circleRadius) {
-          newT[i][j] += power * dt;  // Add a constant amount of heat; adjust the value "10" as needed
-        }
-      }
-    }
-
     T = newT;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -119,4 +118,3 @@ document.addEventListener("DOMContentLoaded", function() {
   populateScaleBar();
   mainLoop();
 });
-  
