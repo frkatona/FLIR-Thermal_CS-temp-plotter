@@ -70,7 +70,9 @@ def Compute_T_3D_RK(output_times):
                    + q)
         
         T_new = T + (k1 + 2*k2 + 2*k3 + k4) / 6
-        print(T_new)
+        if np.any(T_new) > 26:
+            print(T_new)
+
         # Apply boundary conditions with convection cooling at the top surface
         T_new[0, :, :] = T_edge
         T_new[-1, :, :] = T_edge
@@ -79,6 +81,8 @@ def Compute_T_3D_RK(output_times):
         T_new[:, :, 0] = T_edge
         T_new[:, :, -1] = T_new[:, :, -1] - h_conv * (T_new[:, :, -1] - T_air) * dt / (dz)
         T = T_new
+        if np.any(T_new) > 26:
+            print(T_new)
         if n in output_indices:
             output_temperatures.append(T.copy())
     return output_temperatures
