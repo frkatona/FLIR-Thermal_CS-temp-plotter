@@ -20,5 +20,7 @@
  - heat capacity, specific (PDMS) = 1 J/gK
  - temperature, ambient (air) = 20 C
  
+ ## To-do
+  - find real absorption coefficient for CB loadings
 
 ![0cb_image_cross-section.png](exports\0cb_image_cross-section.png)
