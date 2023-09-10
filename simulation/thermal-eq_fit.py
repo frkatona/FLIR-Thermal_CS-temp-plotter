@@ -8,14 +8,14 @@ cube_length_m = 10  # Length of the cube, m
 T_edge = 25.0  # Temperature at the edges, °C
 T_air = 25.0  # Temperature of the surrounding air, °C
 h_conv = 10.0  # Convective heat transfer coefficient, W/(m^2 K)
-Q = 1  # Total heat generation rate, W
-PDMS_thermal_conductivity_WpmK = 0.2e-10 # 0.2 W/mK, artificially low for troubleshooting
+Q = 50  # Total heat generation rate, W
+PDMS_thermal_conductivity_WpmK = 0.2e-18 # 0.2 W/mK, artificially low for troubleshooting
 PDMS_density_gpmL = 1.02
 PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
 ## mesh-grid parameters ##
-Nx, Ny, Nz = 25, 25, 25  # Number of grid points in each dimension
+Nx, Ny, Nz = 50, 50, 50  # Number of grid points in each dimension
 dx = cube_length_m / (Nx - 1)  # Grid spacing in the x direction, m
 dy = cube_length_m / (Ny - 1)  # Grid spacing in the y direction, m
 dz = cube_length_m / (Nz - 1)  # Grid spacing in the z direction, m
@@ -38,10 +38,22 @@ beam_mask = radius_squared <= beam_radius_m**2
 q = np.zeros((Nx, Ny, Nz)) # initialize
 q[beam_mask] = Q / (np.pi * beam_radius_m**2) # radial power density
 q *= np.exp(-1 * abs_coeff * loading * (Z - cube_length_m)) # depth-dependent exponential decay
-# q[Z < cube_length_m] = 0
 
-# report what fraction of power extends beyond the cube
-print(f'{np.sum(q) / Q:.2%} of power is transmitted')
+# Extracting the power density values along the central axis of the beam
+q_center = q[Nx//2, Ny//2, :]
+
+# show what fraction of power extends beyond the cube
+print(f'Power transmitted through entire depth: {(Q - np.sum(q)) / Q:.2%}')
+
+plt.figure(figsize=(8, 6))
+plt.plot(z, q_center)
+plt.xlabel('Depth (m)')
+plt.ylabel('Power Density Fraction of Q')
+plt.title('Power Density Distribution along Beam Central Axis')
+plt.grid(True)
+plt.show()
+
+
 
 def Runge_Kutta(T):
     """computes the next time step with a 4th degree Runge-Kutta"""
@@ -132,7 +144,7 @@ def save_output_temperatures(output_temperatures, filename="output_temperatures.
     """
     np.savez(filename, *output_temperatures)
 
-output_times = [0, 5, 10, 30]
+output_times = [0, 1, 3, 5]
 output_temperatures_RK = Compute_T(output_times)
 
 ## plot and/or save to file as npz ##
