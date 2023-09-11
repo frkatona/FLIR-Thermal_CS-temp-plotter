@@ -56,7 +56,6 @@ P(z) = P_0 \cdot e^{-\alpha z}
 $$
 
 
-
 ### physical parameter notes
 
 - "low power" is 1.3 W/cm2
@@ -85,9 +84,10 @@ $$
 
 ## to-do
 
-- bugs
+- refactor simulation for cylindrical symmetry
+- investigate bugs
   - beam mask not being appropriately applied to the T updates
-  - possibly bugged how I'm dividing the T and q into the discrete points (weird when x/y are even vs odd at certain beam radii for finding centerline, even floored)
-    - % transmittance and max np.sum(q) are bugged (~ -1e10 and ~ 1e6)
-  - T distribution never appears isolated to the surface even when q shows a tapering (even with dt = 0.005 and Nx/y/z = 100)
+  - npz and print temperatures don't reflect the temperatures  in the graph
+  - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
+  - T distribution never appears to decay into the depth though q shows a tapering (even with dt = 0.005 and Nx/y/z = 100 and at higher t values)
 - find real absorption coefficient for CB loadings

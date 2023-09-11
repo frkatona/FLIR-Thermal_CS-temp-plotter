@@ -16,7 +16,7 @@ PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
 ## Mesh-grid parameters ##
-Nx, Ny, Nz = 25, 25, 25  # Number of grid points in each dimension
+Nx, Ny, Nz = 101, 101, 101  # Number of grid points in each dimension
 dx = cube_length_m / (Nx - 1)  # Grid spacing in the x direction, m
 dy = cube_length_m / (Ny - 1)  # Grid spacing in the y direction, m
 dz = cube_length_m / (Nz - 1)  # Grid spacing in the z direction, m
@@ -52,7 +52,7 @@ plt.title('Power Density Distribution along Beam Central Axis')
 plt.grid(True)
 plt.show()
 
-q = 10
+# q = 10
 
 def Runge_Kutta(T):
     """computes T at the the next time step with a 4th degree Runge-Kutta"""
