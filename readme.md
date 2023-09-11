@@ -13,6 +13,34 @@
 
 ## notes
 
+[Holman, 2010, p.89]
+
+Heat conduction in finite-difference approximation of a square grid is given by:
+
+$$
+T_{m+1, n} + T_{m-1, n} + T_{m, n+1} + T_{m, n-1} - 4T_{m, n} = 0
+$$
+
+and heat flux is can be introduced by adding a source term \( q \):
+
+$$
+T_{m+1, n} + T_{m-1, n} + T_{m, n+1} + T_{m, n-1} - 4T_{m, n} + \frac{q(\Delta x)^{2}}{k} = 0
+$$
+
+[Holman, 2010, p.91]
+
+A solid exposed to a convection boundary condition is computed differently:
+
+$$
+-k \Delta y \frac{T_{m, n} - T_{m-1, n}}{\Delta x} - k \frac{\Delta x}{2} \frac{T_{m, n} - T_{m, n+1}}{\Delta y} - k \frac{\Delta x}{2} \frac{T_{m, n} - T_{m, n-1}}{\Delta y} = h \Delta y (T_{m, n} - T_{\infty})
+$$
+
+which with x = y reduces the boundary temperature to:
+
+$$
+T_{m,n}(\frac{h \Delta x}{k} +2) - \frac{h \Delta x}{k} T_{\infty} - \frac{1}{2}(2T_{m-1, n} + T_{m, n+1} + T_{m, n-1}) = 0
+$$
+
 The uniform power distribution across a circular cross section given by a collimated top hat distribution yields:
 
 $$
@@ -57,8 +85,9 @@ $$
 
 ## to-do
 
-- find real absorption coefficient for CB loadings
 - bugs
-  - % transmittance and max np.sum(q) are wild (~ -1e10 and ~ 1e6), probably related to a buggy way of dividing the T and q into the discrete points
-    - beam radii below ~0.3 shows 0 q across center as well
+  - beam mask not being appropriately applied to the T updates
+  - possibly bugged how I'm dividing the T and q into the discrete points (weird when x/y are even vs odd at certain beam radii for finding centerline, even floored)
+    - % transmittance and max np.sum(q) are bugged (~ -1e10 and ~ 1e6)
   - T distribution never appears isolated to the surface even when q shows a tapering (even with dt = 0.005 and Nx/y/z = 100)
+- find real absorption coefficient for CB loadings
