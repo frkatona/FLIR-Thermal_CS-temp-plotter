@@ -9,10 +9,10 @@
  - name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
  - change the file_path variable in the appropriate image_analyzer script and run it
 
- ## Data notes
-  - "low power" is 1.3 W/cm2
-  - "high power" is 40 W/cm2
-  - data cut off early when fires started or the fiber optics were becoming damaged
+## Data notes
+ - "low power" is 1.3 W/cm2
+ - "high power" is 40 W/cm2
+ - data cut off early when fires started or the fiber optics were becoming damaged
 
 ## Relevant values
  - thermal conductivity (PDMS) = 0.2 W/mK
@@ -20,7 +20,25 @@
  - heat capacity, specific (PDMS) = 1 J/gK
  - temperature, ambient (air) = 20 C
  
- ## To-do
+## To-do
+ - Simulation
   - find real absorption coefficient for CB loadings
 
-![0cb_image_cross-section.png](exports\0cb_image_cross-section.png)
+## Notes
+
+The power \( P(z) \) at a depth \( z \) in a medium due to absorption can be described by the Beer-Lambert law. Given an initial power \( P_0 \) and an absorption coefficient \( \alpha \), the power at a depth \( z \) is given by:
+
+$$
+P(z) = P_0 \cdot e^{-\alpha z}
+$$
+
+Where:
+- \( P(z) \) is the power at depth \( z \).
+- \( P_0 \) is the initial power (i.e., power at the surface or \( z = 0 \)).
+- \( \alpha \) is the absorption coefficient of the medium.
+- \( e \) is the base of the natural logarithm (approximately equal to 2.71828).
+
+![0cb_image_cross-section.png](exports\upgrade-examples\temp-profile_005s.png)
+![0cb_image_cross-section.png](exports\upgrade-examples\temp-profile-300s.png)
+![0cb_image_cross-section.png](exports\upgrade-examples\slice.png)
+![0cb_image_cross-section.png](exports\upgrade-examples\log.png)
