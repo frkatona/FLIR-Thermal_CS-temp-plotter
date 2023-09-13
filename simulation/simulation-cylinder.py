@@ -27,9 +27,6 @@ x = np.linspace(0, square_length_m, Nx)
 y = x
 X, Y = np.meshgrid(x, y)
 
-dt  # Displaying the updated dt value in the modified code
-
-
 ## Heat source parameters ##
 beam_radius_m = 0.01
 loading = 1e-6  # mass fraction of CB in PDMS, g/g
