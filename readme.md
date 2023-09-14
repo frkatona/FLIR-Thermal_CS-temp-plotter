@@ -52,20 +52,45 @@ $$
 
 [CONSIDER if the volumetric heat application in eq2 is correct]
 
-For a constant power source, a power term can be added to the node $(m, n)$ in $\mathbf{eq1}$. A volumetric power, $q$, can be found through:
-
-$$
-q = \frac{Q}{\Delta x \cdot \Delta y \cdot \Delta z}
-$$
-
-For the volume of the material which overlaps with the power source, $T_{m,n}^{p+1}$ can be described by:
+For a constant power source, a power term can be added to the node $(m, n)$ in $\mathbf{eq1}$.  For the volume of the material which overlaps with the power source, $T_{m,n}^{p+1}$ can be described by:
 
 $$
 \mathbf{(2)}\space{}T_{m,n}^{p+1} = \frac{\alpha \Delta \tau}{(\Delta x)^2} (T_{m+1,n}^p + T_{m-1,n}^p + T_{m,n+1}^p + T_{m,n-1}^p) + \left[1-\frac{4\alpha \Delta \tau}{(\Delta x)^2}\right] T_{m,n}^p + \frac{q}{c \rho} \Delta \tau
 $$
 
-where $c$ is the specific heat capacity and $\rho$ is the density of the material, combining to describe the volumetric heat capacity
+where $c$ is the specific heat capacity and $\rho$ is the density of the material (combining to describe the volumetric heat capacity) and $q$ is the volumetric power which, in the simplest case, is given by:
 
+$$
+q = \frac{Q}{\Delta x \cdot \Delta y \cdot \Delta z}
+$$
+
+However, the power source is not perfectly uniformly distributed across the given volume of the material.  The following three considerations must be made:
+
+1) radial distribution
+2) depth distribution
+3) transmittance
+
+(1) Due to the top-hat distribution of the laser source in this case, the radial distribution (i.e., the horizontal cross-section) is indeed uniform.  So, at a given depth, $y$, the power in a given volume element be described by its fraction of the cylinder across that depth:
+
+$$
+P_{\Delta x\Delta y \Delta z} = \frac{\Delta x \cdot \Delta y}{\pi r^2} \cdot P_0
+$$
+
+(2) Because the heat source is modeling the absorption of light, the depth distribution of the laser power (i.e., the vertical cross-section) can be described by the Beer-Lambert law.  This exponential decay of power across the depth of the material, $P(z)$ is given by:
+
+$$
+P(z) = P_0 \cdot e^{-\alpha z}
+$$
+
+where $P_0$ is the power at the surface and $\alpha_{abs}$ is the absorption coefficient (not to be confused with the thermal diffusivity, $\alpha$).
+
+(3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.
+
+And so the power absorbed in a given area element $\Delta y$ is given as:
+
+$$
+P_{\Delta x\Delta y} = P_0 \cdot (e^{-\alpha z} - 1) \cdot e^{-\alpha (z + \Delta z)}
+$$
 ### Convection Boundary
 
 Above relations do not apply at convection boundaries and must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation is given by [Holman p. 170]:
@@ -100,8 +125,13 @@ $$
 \frac{(\Delta x)^2}{\alpha \Delta \tau} >= 2 (\frac{h \Delta x}{k} + 1)
 $$
 
+
+### Combining all Three Cases
+
+And so with each 
+
 ### Extending to 3D with Cylindrical Symmetry
-The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by [Holman p. 182]:
+The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:
 
 $$
 \frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{1}{r^2} \frac{\partial^2 T}{\partial \theta^2} + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
@@ -113,24 +143,7 @@ $$
 \frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
 $$
 
-Which is described by the 2D numerical solutions above.  In addition to conventional conductive heat flow $(1)$, the volume of the material which overlaps with the laser beam power source $(2)$ will contain an additional power term, $\frac{q}{k}$ and the surface of the material will experience convective cooling $(3)$, which can be described by asdfasdf:
-
-
-
-The heat source can be modeled with uniform distribution across the horizontal cross section of the beam (due to the top hat laser power distribution from beam source).
-
-$$
-q = \frac{P_{laser}}{V_{irradiated}} = \frac{P_{laser}}{\pi r^2 l}
-$$
-
-and an exponential decay in the vertical direction (due to the Beer-Lambert law).
-
-
-The power at a given depth $P_z$ is described by the Beer-Lambert law given an initial power $P_0$ and an absorption coefficient $\alpha_{abs}$, 
-
-$$
-P(z) = P_0 \cdot e^{-\alpha z}
-$$
+Which is described by the 2D numerical solutions above. 
 
 
 - [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
