@@ -1,5 +1,3 @@
-# Modified code with the updated value for dt
-
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -7,7 +5,7 @@ from matplotlib import cm
 from tqdm import tqdm
 
 ## Material physical parameters ##
-square_length_m = 10  # m
+square_length_m = 1  # m
 T_edge = 25.0  # °C
 T_air = 25.0  # °C
 h_conv = 10.0  # W/(m^2 K)
@@ -28,20 +26,20 @@ y = x
 X, Y = np.meshgrid(x, y)
 
 ## Heat source parameters ##
-beam_radius_m = 0.01
+beam_radius_m = 0.1
 loading = 1e-6  # mass fraction of CB in PDMS, g/g
 abs_coeff = 1e+6  # absorption coefficient of CB in PDMS, m^-1
 
-radius_squared = (X - square_length_m / 2)**2 + (Y - square_length_m / 2)**2
-beam_mask = radius_squared <= beam_radius_m**2
+radius = (X - square_length_m / 2)**2 + (Y - square_length_m / 2)**2
+beam_mask = radius <= beam_radius_m
 q = np.zeros((Nx, Ny))
 q[beam_mask] = Q / (np.pi * beam_radius_m**2 * square_length_m)  # power density distributed across the entire volume
-q *= np.exp(-1 * abs_coeff * loading * Z)  # depth-dependent exponential decay
+q *= np.exp(-1 * abs_coeff * loading * Y)  # depth-dependent exponential decay
 
 # Show what fraction of power extends beyond the cube
-transmittance = (Q - np.sum(q * dx * dx)) / Q
+transmittance = (Q - np.sum(q * dx**2)) / Q
 print(f'Transmittance through material: {transmittance:.2%}')
-print(f'max q (W): {np.max(q) * dx * dx:.2e}')
+print(f'max q (W): {np.max(q) * dx**2:.2e}')
 
 # Plotting q's distribution
 q_center = q[Nx//2, Ny//2, :]
