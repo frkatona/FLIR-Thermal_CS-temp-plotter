@@ -13,6 +13,9 @@
 
 ## to-do
 
+### QoL
+- find why github isn't loading images or certain equations in readme (e.g., %T)
+
 ### Simulation-3D (soon to be deprecated)
 - refactor simulation for cylindrical symmetry
 - investigate bugs
