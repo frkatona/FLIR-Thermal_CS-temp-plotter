@@ -11,6 +11,16 @@
 - name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
 - change the file_path variable in the appropriate image_analyzer script and run it
 
+## to-do
+
+- refactor simulation for cylindrical symmetry
+- investigate bugs
+  - beam mask not being appropriately applied to the T updates
+  - npz and print temperatures don't reflect the temperatures  in the graph
+  - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
+  - T distribution never appears to decay into the depth though q shows a tapering (even with $\Delta \tau$ = 0.005 and Nx/y/z = 100 and at higher t values)
+- find real absorption coefficient for CB loadings
+
 ## unsteady-state numerical considerations (*J.P. Holman*, 2010)
 
 ### Conduction Through Bulk
@@ -28,31 +38,6 @@ $$
 $$
 
 ### Heat Source
-In the case of constant heat flux on a semi-finite solid, boundary conditions can be described as:
-
-$$
-T(x, 0) = T_i
-$$
-
-$$
-\frac{q_0}{A} = -k \frac{\partial T}{\partial x} \bigg|_{x=0}
-$$
-
-and the solution in this case is given by [Holman p. 145]:
-
-$$
-T - T_i = \frac{2q_0\sqrt{\alpha \tau / \pi}}{kA} exp(\frac{-x^2}{4\alpha \tau})- \frac{q_0x}{kA} (1-erf\left[\frac{x}{2\sqrt{\alpha \tau}}\right])
-$$
-
-[CONSIDER if the erf term applies to the numerical solution]
-
-[CONSIDER how the volumetric nature of the space steps must be taken into account for possible theta values (should dx be chosen based on $\frac{2\pi}{n}$?) and finding the number of nodes that Q will be distributed across]
-
-[CONSIDER if boundary conditions should be additive for the convective and heat source overlap region]
-
-[CONSIDER if the volumetric heat application in eq2 is correct]
-
-[CONSIDER if y integrations should be from y->(y+dy) or (y-1/2 dy)->(y+1/2 dy)]
 
 For a constant power source, a power term can be added to the node $(m, n)$ in $\mathbf{eq1}$.  For the volume of the material which overlaps with the power source, $T_{m,n}^{p+1}$ can be described by:
 
@@ -98,7 +83,7 @@ $$
 q_{xyz} = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
 $$
 
-(3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.  Given the above formulations for q, this should not impact the simulation accuracy, but for any other purposes, the transmittance through the entire height, $h$, of the material can be found by:
+(3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.  Given the above formulations for q, this should not impact the simulation accuracy, but for any other purposes--e.g., incorporation into fit parameters--the transmittance, $T$, through the entire height, $h$, of the material can be found by:
 
 $$
 \%T = \frac{\int_{h}^{\infty} Q \cdot e^{-\alpha y} dy}{Q} \cdot 100\%
@@ -138,9 +123,42 @@ $$
 \frac{(\Delta x)^2}{\alpha \Delta \tau} >= 2 (\frac{h \Delta x}{k} + 1)
 $$
 
-### Combining all Three Cases
+### Condition Summary
 
-And so with each 
+And so for all elements within the system, $T_{m,n}^{p+1}$ can be found in the bulk,
+
+$$
+\mathbf{(bulk)}\space{}T_{m,n}^{p+1} = \frac{\alpha \Delta \tau}{(\Delta x)^2} (T_{m+1,n}^p + T_{m-1,n}^p + T_{m,n+1}^p + T_{m,n-1}^p) + \left[1-\frac{4\alpha \Delta \tau}{(\Delta x)^2}\right] T_{m,n}^p 
+$$
+
+at the surface,
+
+$$
+\mathbf{(surf.)}\space{}T_{m,n}^{p+1} = \frac{\alpha \Delta \tau}{(\Delta x)^2} \left[ 2\frac{h\Delta x}{k} T_{\infty} + 2T_{m-1,n}^p + T_{m,n+1}^p + T_{m,n-1}^p + \left[\frac{(\Delta x)^2}{\alpha \Delta \tau} - 2\frac{h \Delta x}{k} - 4\right]T_{m,n}^p \right]
+$$
+
+and with an additional power source term where either overlaps with the beam,
+$$
+\mathbf{(beam)}\space{}\frac{q}{c \rho} \Delta \tau
+$$
+
+Moreover, the other boundaries of the system can be assumed to rest at ambient temperature, $T_{\infty}$,
+
+$$
+T_{edge} = T_{\infty}
+$$
+
+and with the initial conditions,
+
+$$
+T_{m,n}^0 = T_{\infty}
+$$
+
+the considerations are complete.
+
+## RK4
+
+asdf
 
 ## implementing DSC data for cure profiles
 
@@ -178,17 +196,37 @@ asdf
 
 ![thermal profile workup - log](exports\upgrade-examples\log.png)
 
-## to-do
-
-- refactor simulation for cylindrical symmetry
-- investigate bugs
-  - beam mask not being appropriately applied to the T updates
-  - npz and print temperatures don't reflect the temperatures  in the graph
-  - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
-  - T distribution never appears to decay into the depth though q shows a tapering (even with $\Delta \tau$ = 0.005 and Nx/y/z = 100 and at higher t values)
-- find real absorption coefficient for CB loadings
-
 ## misc
+
+### non-discrete heat source equation
+In the case of constant heat flux on a semi-finite solid, boundary conditions can be described as:
+
+$$
+T(x, 0) = T_i
+$$
+
+$$
+\frac{q_0}{A} = -k \frac{\partial T}{\partial x} \bigg|_{x=0}
+$$
+
+and the solution in this case is given by [Holman p. 145]:
+
+$$
+T - T_i = \frac{2q_0\sqrt{\alpha \tau / \pi}}{kA} exp(\frac{-x^2}{4\alpha \tau})- \frac{q_0x}{kA} (1-erf\left[\frac{x}{2\sqrt{\alpha \tau}}\right])
+$$
+
+### Self-Doubt
+
+[CONSIDER if the erf term applies to the numerical solution]
+
+[CONSIDER how the volumetric nature of the space steps must be taken into account for possible theta values (should dx be chosen based on $\frac{2\pi}{n}$?) and finding the number of nodes that Q will be distributed across]
+
+[CONSIDER if boundary conditions should be additive for the convective and heat source overlap region]
+
+[CONSIDER if the volumetric heat application in eq2 is correct]
+
+[CONSIDER if y integrations should be from y->(y+dy) or (y-1/2 dy)->(y+1/2 dy)]
+
 ### Extending to 3D with Cylindrical Symmetry (ignore for now)
 The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:
 
@@ -204,6 +242,7 @@ $$
 
 Which is described by the 2D numerical solutions above. 
 
+### Extra Notes
 
 - [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
 - [p. 99] Guass-Seidel iterative method convergence
