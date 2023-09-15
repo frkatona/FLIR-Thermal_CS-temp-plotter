@@ -1,163 +1,79 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from tqdm import tqdm
 
-## Material physical parameters ##
-square_length_m = 1  # m
-T_edge = 25.0  # °C
-T_air = 25.0  # °C
-h_conv = 10.0  # W/(m^2 K)
-Q = 50 # laser power, W  
-PDMS_thermal_conductivity_WpmK = 0.2  # W/(m K)
-PDMS_density_gpmL = 1.02
-PDMS_heat_capacity_JpgK = 1.67
-PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
+def is_within_beam(x, y, r):
+    """Check if a point is within the beam radius."""
+    return (x - r)**2 + (y - r)**2 <= r**2
 
-## Mesh-grid parameters ##
-Nx = 101  # Number of grid points in each dimension
-Ny = Nx
-dx = square_length_m / (Nx - 1)  # Grid spacing in the x direction, m
-dy = dx
-dt = dx**2 / (4 * PDMS_thermal_diffusivity_m2ps)  # Time step, s
-x = np.linspace(0, square_length_m, Nx)
-y = x
-X, Y = np.meshgrid(x, y)
+def compute_next_temperature(T, q_xyz, delta_x, delta_tau, alpha, h, k, T_inf, r):
+    """Compute the temperature for the next time step using finite difference."""
+    T_next = T.copy()
+    M = (delta_x**2) / (alpha * delta_tau)
+    
+    for i in range(1, T.shape[0] - 1):
+        for j in range(1, T.shape[1] - 1):
+            T_next[i, j] = (alpha * delta_tau / delta_x**2) * (T[i+1, j] + T[i-1, j] + T[i, j+1] + T[i, j-1]) \
+                         + (1 - 4*alpha*delta_tau/delta_x**2) * T[i, j]
+            
+            if is_within_beam(i*delta_x, j*delta_y, r):
+                T_next[i, j] += (q_xyz[i, j] / (c_PDMS * rho_PDMS)) * delta_tau
+    
+    # Adiabatic boundary conditions
+    T_next[0, :] = T_next[1, :]
+    T_next[-1, :] = T_next[-2, :]
+    T_next[:, 0] = T_next[:, 1]
+    T_next[:, -1] = T_next[:, -2]
+    
+    return T_next
 
-## Heat source parameters ##
-beam_radius_m = 0.1
-loading = 1e-6  # mass fraction of CB in PDMS, g/g
-abs_coeff = 1e+6  # absorption coefficient of CB in PDMS, m^-1
+# Material properties and parameters from README
+r = 1.5e-2
+alpha_PDMS = 0.133e-6
+k_PDMS = 0.2
+rho_PDMS = 1.03e3
+c_PDMS = 1.46e3
+h = 10
+T_inf = 25
+alpha_abs = 0.1e3
+P_high = 600  # Updated to the higher power
+Q0_new = P_high / (np.pi * r**2)
 
-radius = (X - square_length_m / 2)**2 + (Y - square_length_m / 2)**2
-beam_mask = radius <= beam_radius_m
-q = np.zeros((Nx, Ny))
-q[beam_mask] = Q / (np.pi * beam_radius_m**2 * square_length_m)  # power density distributed across the entire volume
-q *= np.exp(-1 * abs_coeff * loading * Y)  # depth-dependent exponential decay
+# Simulation parameters
+delta_x = r/20
+delta_y = delta_x
+delta_tau = 0.01
+end_time = 2
+time_steps = int(end_time / delta_tau)
 
-# Show what fraction of power extends beyond the cube
-transmittance = (Q - np.sum(q * dx**2)) / Q
-print(f'Transmittance through material: {transmittance:.2%}')
-print(f'max q (W): {np.max(q) * dx**2:.2e}')
+# Initialize 2D grid
+x_points = int(2*r / delta_x)
+y_points = x_points
+T = np.full((x_points, y_points), T_inf)
 
-# Plotting q's distribution
-q_center = q[Nx//2, Ny//2, :]
-plt.figure(figsize=(8, 6))
-plt.plot(z, q_center)
-plt.xlabel('Depth (m)')
-plt.ylabel('Power Density (W/m^3)')
-plt.title('Power Density Distribution along Beam Central Axis')
-plt.grid(True)
+# Compute q_xyz for each node with the new power
+q_xyz_new = np.zeros((x_points, y_points))
+for i in range(x_points):
+    for j in range(y_points):
+        y_start = j * delta_y
+        y_end = y_start + delta_y
+        integral_value = Q0_new * (np.exp(-alpha_abs * y_start) - np.exp(-alpha_abs * y_end)) / alpha_abs
+        q_xyz_new[i, j] = integral_value * delta_x * delta_z / (np.pi * r**2)
+
+# Time-stepping
+T_snapshots_new = [T.copy()]
+for t in range(time_steps):
+    T = compute_next_temperature(T, q_xyz_new, delta_x, delta_tau, alpha_PDMS, h, k_PDMS, T_inf, r)
+    if (t+1) * delta_tau in [1, 2]:
+        T_snapshots_new.append(T.copy())
+
+# Plotting the results
+fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+times = [0, 1, 2]
+for i, ax in enumerate(axs):
+    c = ax.imshow(T_snapshots_new[i], cmap='hot', origin='lower', extent=[0, 2*r, 0, 2*r])
+    ax.set_title(f"Temperature Distribution at t = {times[i]} s (Higher Power)")
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    fig.colorbar(c, ax=ax, label='Temperature (°C)')
+plt.tight_layout()
 plt.show()
-
-# q = 10
-
-def Runge_Kutta(T):
-    """computes T at the the next time step with a 4th degree Runge-Kutta"""
-    k1 = dt * (PDMS_thermal_diffusivity_m2ps * (np.roll(T, -1, axis=0) - 2*T + np.roll(T, 1, axis=0)) / dx**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T, -1, axis=1) - 2*T + np.roll(T, 1, axis=1)) / dy**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T, -1, axis=2) - 2*T + np.roll(T, 1, axis=2)) / dz**2
-                + q)
-    
-    T_temp = T + k1 / 2
-    k2 = dt * (PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=0) - 2*T_temp + np.roll(T_temp, 1, axis=0)) / dx**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=1) - 2*T_temp + np.roll(T_temp, 1, axis=1)) / dy**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=2) - 2*T_temp + np.roll(T_temp, 1, axis=2)) / dz**2
-                + q)
-    
-    T_temp = T + k2 / 2
-    k3 = dt * (PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=0) - 2*T_temp + np.roll(T_temp, 1, axis=0)) / dx**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=1) - 2*T_temp + np.roll(T_temp, 1, axis=1)) / dy**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=2) - 2*T_temp + np.roll(T_temp, 1, axis=2)) / dz**2
-                + q)
-    
-    T_temp = T + k3
-    k4 = dt * (PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=0) - 2*T_temp + np.roll(T_temp, 1, axis=0)) / dx**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=1) - 2*T_temp + np.roll(T_temp, 1, axis=1)) / dy**2
-                + PDMS_thermal_diffusivity_m2ps * (np.roll(T_temp, -1, axis=2) - 2*T_temp + np.roll(T_temp, 1, axis=2)) / dz**2
-                + q)
-        
-    return T + (k1 + 2*k2 + 2*k3 + k4) / 6
-
-def Boundary_Conditions(T_new):
-    '''applies boundary conditions and surface convection to T_new'''
-    ## boundary conditions ##
-    T_new[0, :, :] = T_edge
-    T_new[-1, :, :] = T_edge
-    T_new[:, 0, :] = T_edge
-    T_new[:, -1, :] = T_edge
-    T_new[:, :, 0] = T_edge
-    T_new[:, :, -1] = T_new[:, :, -1] - h_conv * (T_new[:, :, -1] - T_air) * dt / (dz) # convection at top surface
-    return T_new
-
-def Compute_T(output_times):
-    '''computes T at each grid point at each time step and returns data for each value in output_time'''
-    # initialize temperature distribution and output structures
-    T = np.full((Nx, Ny, Nz), T_edge)
-    output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
-    output_temperatures = []
-
-    # progress bar
-    total_iterations = max(output_indices) + 1
-    one_percent_iterations = int(total_iterations * 0.01)
-    pbar = tqdm(total=total_iterations, desc="Computing", postfix="0% done")
-
-    # loop across each necessary time step
-    for n in range(max(output_indices) + 1):
-        T_new = Runge_Kutta(T)
-        T = Boundary_Conditions(T_new)
-        
-        if n in output_indices:
-            output_temperatures.append(T.copy())
-
-        if np.any(T) > 26: # troubleshooting problem where T never changes but the plots show it does
-            print(T)
-           
-        # if n % one_percent_iterations == 0:
-        #     progress_percentage = n * 100 / total_iterations
-        #     pbar.set_postfix_str(f"{progress_percentage:.2f}% done")
-        #     pbar.update(one_percent_iterations)
-
-    pbar.close()
-    return output_temperatures
-
-def Plot_T_Slices(X, Y, Z, output_temperatures, output_times):
-    '''plots slices of T at each output time'''
-    fig = plt.figure(figsize=(12, 8))
-    custom_cmap = plt.cm.get_cmap('hot', 20) # also, 'coolwarm'
-    for i, T_out in enumerate(output_temperatures):
-        ax = fig.add_subplot(1, len(output_times), i+1, projection='3d')
-        c = ax.contourf(X[:, :, Nz//2], Y[:, :, Nz//2], T_out[:, :, Nz//2], zdir='z', offset=Z[0, 0, Nz//2], 
-                        levels=np.linspace(20, 115, 20), cmap=custom_cmap, alpha=0.75)
-        ax.contourf(X[:, :, Nz//2], Y[:, :, Nz//2], T_out[:, :, Nz//2], zdir='z', offset=Z[0, 0, Nz-1], 
-                        levels=np.linspace(20, 115, 20), cmap=custom_cmap, alpha=0.75)
-        ax.contourf(X[:, :, Nz//2], Y[:, :, Nz//2], T_out[:, :, Nz//2], zdir='z', offset=Z[0, 0, 0], 
-                        levels=np.linspace(20, 115, 20), cmap=custom_cmap, alpha=0.75)
-        ax.set_title(f't = {output_times[i]} s')
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        ax.set_zlabel('z (m)')
-        ax.set_xlim([0, square_length_m])
-        ax.set_ylim([0, square_length_m])
-        ax.set_zlim([0, square_length_m])
-        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(20, 116, 10))
-    plt.tight_layout()
-    plt.show()
-
-def save_output_temperatures(output_temperatures, filename):
-    """
-    Save the output temperatures to a file.
-    
-    Parameters:
-    - output_temperatures: List of 3D numpy arrays containing temperature data.
-    - filename: Name of the file to save the data to.
-    """
-    np.savez(filename, *output_temperatures)
-
-output_times = [0, 1, 3, 5]
-output_temperatures_RK = Compute_T(output_times)
-
-## plot and/or save to file as npz ##
-Plot_T_Slices(X, Y, Z, output_temperatures_RK, output_times)
-save_output_temperatures(output_temperatures_RK, "output_temperatures.npz")

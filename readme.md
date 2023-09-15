@@ -13,6 +13,7 @@
 
 ## to-do
 
+### Simulation-3D (soon to be deprecated)
 - refactor simulation for cylindrical symmetry
 - investigate bugs
   - beam mask not being appropriately applied to the T updates
@@ -20,6 +21,11 @@
   - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
   - T distribution never appears to decay into the depth though q shows a tapering (even with $\Delta \tau$ = 0.005 and Nx/y/z = 100 and at higher t values)
 - find real absorption coefficient for CB loadings
+
+### Simulation-Cylinder
+- get graphs of xy slices
+- model to experimental data
+- incorporate DSC gelation data
 
 ## unsteady-state numerical considerations (*J.P. Holman*, 2010)
 
@@ -143,10 +149,18 @@ $$
 \mathbf{(beam)}\space{}\frac{q}{c \rho} \Delta \tau
 $$
 
-Moreover, the other boundaries of the system can be assumed to rest at ambient temperature, $T_{\infty}$,
+Moreover, the other boundaries of the system can follow a modified ruleset to counter errors arising from seeking non-existent nodes beyond the boundary.  Here, I will assume these boundaries are adiabatic and so the temperature at the boundary will be set equal to the temperature of the node just inside the boundary as a correction at the end of each timestep, i.e.,
 
 $$
-T_{edge} = T_{\infty}
+\mathbf{(left)}\space{} T_{i,j}^{p+1} = T_{i+1,j}^{p+1}
+$$
+
+$$
+\mathbf{(right)}\space{} T_{i,j}^{p+1} = T_{i-1,j}^{p+1}
+$$
+
+$$
+\mathbf{(bottom)}\space{} T_{i,j}^{p+1} = T_{i,j+1}^{p+1}
 $$
 
 and with the initial conditions,
@@ -157,29 +171,74 @@ $$
 
 the considerations are complete.
 
-## RK4
+## physical parameter notes
 
-asdf
+- beam radius, $r = 1.5 cm$
+- low power, $P_{low} = 3 W$
+- high power, $P_{high} = 60 W/cm2$
+- Change with PDMS Loading:
+  - absorption coefficient, $\alpha_{abs} = 0.1 \frac{1}{mm}$ (still need to extract from UV/Vis data)
+  - PDMS thermal conductivity, $k_{PDMS} = 0.2 \frac{W}{m\cdot{K}}$
+- PDMS density, $\rho_{PDMS} = 1.03 \frac{g}{mL}$
+- PDMS specific heat, $c_{PDMS}=  1.46 \frac{J}{g\cdot K}$
+  - from https://www.mit.edu/~6.777/matprops/pdms.htm
+- PDMS thermal diffusivity, $\alpha_{PDMS} = \frac{k}{\rho c} = 0.133 \frac{mm^2}{s}$
+  - note that because $k$ changes with loading, diffusivity will also need to be updated in each simulation
+- air ambient temperature, $T = 25 °C$
+- air convection coefficient, $h = 10 \frac{W}{m^2 \cdot K}$
+  - note that this value can effectively vary by virtually an order of magnitude in either direction because the convective interface is notoriously inherently inaccurate.  Therefore, it either needs to be modeled on its own in independent experimentation for these systems in a controlled environment or we can not worry about it
+
+## improved accuracy with Runge-Kutta implementation
+
+The Runge-Kutta 4th Order Method (RK4) is a widely used numerical technique for computational efficiency with sometimes drastic improvements to accuracy over a vanilla Euler method approach.  Given an ODE of the form:
+
+$$
+\frac{dy}{dt} = f(t, y)
+$$
+
+with an initial condition 
+
+$$
+y(t_0) = y_0
+$$
+
+the RK4 method approximates the solution with four separate steps updating the solution at each step with the previous step's solution.  The four steps are given by:
+
+$$
+\mathbf{(1)}\space{}k_1 = f(t_n, y_n)
+$$
+
+$$
+\mathbf{(2)}\space{}k_2 = f(t_n + \frac{\Delta t}{2}, y_n + \frac{\Delta t}{2} k_1)
+$$
+
+$$
+\mathbf{(3)}\space{}k_3 = f(t_n + \frac{\Delta t}{2}, y_n + \frac{\Delta t}{2} k_2)
+$$
+
+$$
+\mathbf{(4)}\space{}k_4 = f(t_n + \Delta t, y_n + \Delta t k_3)
+$$
+
+and they are combined in a weighted average:
+
+$$
+y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
+$$
+
+Often this is used with an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step.  This is not implemented here, but it is worth noting that the error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution (and the utility of its implementation) can be estimated by comparing the solve times and solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## implementing DSC data for cure profiles
 
-asdf
+Because temperature, time, and cure events are all related to each other and relevant to this research, DSC data can be incorporated both to further extend the accuracy of heat transfer by accounting for the exothermic crosslinking events and (more importantly) to complete a "cure profile" that could benefit efforts to cure with desired depths, widths, times, powers, and for desired shapes.  One paper that will likely be very useful is:
+
+Elisa Toto, et al. *Polymers*, **2020**, http://dx.doi.org/10.3390/polym12102301
 
 ## fitting penetration and T profiles to model
 
-asdf
+The model will be fit to experimental data for temperatures observed at the surface and bulk at various loadings and powers.
 
-## physical parameter notes
-
-- "low power" is 1.3 W/cm2
-- "high power" is 40 W/cm2
-- thermal conductivity (PDMS) = 0.2 W/mK
-- specific gravity (PDMS) = 1.03
-- heat capacity, specific (PDMS) = 1 J/gK
-- temperature, ambient (air) = 20 C
-- data cut off early when fires started or the fiber optics were becoming damaged
-
-## example images
+## example thermal images
 
 ### thermal profile - laser - 5 s
 
