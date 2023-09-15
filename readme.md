@@ -138,6 +138,7 @@ $$
 $$
 
 and with an additional power source term where either overlaps with the beam,
+
 $$
 \mathbf{(beam)}\space{}\frac{q}{c \rho} \Delta \tau
 $$
