@@ -86,7 +86,7 @@ $$
 which makes the power density, $q$, for a given voxel:
 
 $$
-q_{xyz} = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
+Q_{xyz} = q = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
 $$
 
 (3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.  Given the above formulations for q, this should not impact the simulation accuracy, but for any other purposes--e.g., incorporation into fit parameters--the transmittance, $T$, through the entire height, $h$, of the material can be found by:
@@ -97,23 +97,25 @@ $$
 
 ### Convection Boundary
 
-Above relations do not apply at convection boundaries and must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation is given by [Holman p. 170]:
+Above relations do not apply at convection boundaries which must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation for a convection boundary is given by [Holman p. 170]:
 
 $$
 -k\frac{\Delta y}{\Delta x} (T_{m+1} - T_{m}) = h \Delta y (T_{m+1} - T_{\infty})
 $$
 
-or rearranged to
+which can be rearranged to
 
 $$
 T_{m+1} = \frac{T_m + (h \Delta x / k) T_{\infty}}{1 + h \Delta x / k}
 $$
 
-which neglects the heat capacity of the element of the wall at the boundary, but that should be small when a large number of $\Delta x$ nodes are used such that the surface area is small relative to the bulk.  Heat capacity can be accounted for, however (when $\Delta x = \Delta y$) with:
+This neglects the heat capacity of the element of the wall at the boundary, but that should be small when a large number of $\Delta x$ nodes are used such that the surface area is small relative to the bulk.  Heat capacity can be accounted for, however (when $\Delta x = \Delta y$) with:
 
 $$
 \mathbf{(3)}\space{}T_{m,n}^{p+1} = \frac{\alpha \Delta \tau}{(\Delta x)^2} \left[ 2\frac{h\Delta x}{k} T_{\infty} + 2T_{m-1,n}^p + T_{m,n+1}^p + T_{m,n-1}^p + \left[\frac{(\Delta x)^2}{\alpha \Delta \tau} - 2\frac{h \Delta x}{k} - 4\right]T_{m,n}^p \right]
 $$
+
+Though it is noted that error at the convection boundary is generally inherently large and thus in-depth considerations as such--short of egregious negligence--are not necessarily warranted.
 
 ### Satisfying the CFL Condition
 
@@ -146,7 +148,7 @@ $$
 and with an additional power source term where either overlaps with the beam,
 
 $$
-\mathbf{(beam)}\space{}\frac{q}{c \rho} \Delta \tau
+\mathbf{(beam)}\space{}\frac{\left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \frac{\Delta x \cdot \Delta z}{\pi r^2}}{c \rho} \Delta \tau
 $$
 
 Moreover, the other boundaries of the system can follow a modified ruleset to counter errors arising from seeking non-existent nodes beyond the boundary.  Here, I will assume these boundaries are adiabatic and so the temperature at the boundary will be set equal to the temperature of the node just inside the boundary as a correction at the end of each timestep, i.e.,
@@ -226,7 +228,7 @@ $$
 y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 $$
 
-Often this is used with an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step.  This is not implemented here, but it is worth noting that the error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution (and the utility of its implementation) can be estimated by comparing the solve times and solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
+While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## implementing DSC data for cure profiles
 
