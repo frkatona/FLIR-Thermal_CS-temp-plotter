@@ -57,7 +57,7 @@ for i in range(x_points):
         y_start = j * delta_y
         y_end = y_start + delta_y
         integral_value = Q0_new * (np.exp(-alpha_abs * y_start) - np.exp(-alpha_abs * y_end)) / alpha_abs
-        q_xyz_new[i, j] = integral_value * delta_x * delta_z / (np.pi * r**2)
+        q_xyz_new[i, j] = integral_value * delta_x * delta_x / (np.pi * r**2)
 
 # Time-stepping
 T_snapshots_new = [T.copy()]
