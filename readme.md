@@ -52,6 +52,8 @@ $$
 
 [CONSIDER if the volumetric heat application in eq2 is correct]
 
+[CONSIDER if y integrations should be from y->(y+dy) or (y-1/2 dy)->(y+1/2 dy)]
+
 For a constant power source, a power term can be added to the node $(m, n)$ in $\mathbf{eq1}$.  For the volume of the material which overlaps with the power source, $T_{m,n}^{p+1}$ can be described by:
 
 $$
@@ -64,33 +66,44 @@ $$
 q = \frac{Q}{\Delta x \cdot \Delta y \cdot \Delta z}
 $$
 
-However, the power source is not perfectly uniformly distributed across the given volume of the material.  The following three considerations must be made:
+where, for our purposes, $\Delta x$ is the radial coordinate, $\Delta y$ is axial (i.e., height), and $\Delta z$ is tangent to the curve (note: it's possible an azimuthal angle $\theta$ would be more appropriate--which would yeild cylindrical-shell volume elements for the purposes of distributing heat in *Consideration 2* below--but for now, the volume elements are cubic). However, the power source is not perfectly uniformly distributed across the given volume of the material.  The following three Considerations must be made:
 
-1) radial distribution
-2) depth distribution
+1) depth distribution 
+2) radial distribution
 3) transmittance
 
-(1) Due to the top-hat distribution of the laser source in this case, the radial distribution (i.e., the horizontal cross-section) is indeed uniform.  So, at a given depth, $y$, the power in a given volume element be described by its fraction of the cylinder across that depth:
+(1) Because the heat source is modeling the absorption of light, the depth distribution of the laser power (i.e., vertical cross-sections) can be described by the Beer-Lambert law.  This exponential decay of power across the depth of the material, $Q(z)$ is given by:
 
 $$
-P_{\Delta x\Delta y \Delta z} = \frac{\Delta x \cdot \Delta y}{\pi r^2} \cdot P_0
+Q_y = Q_0 \cdot e^{-\alpha y}
 $$
 
-(2) Because the heat source is modeling the absorption of light, the depth distribution of the laser power (i.e., the vertical cross-section) can be described by the Beer-Lambert law.  This exponential decay of power across the depth of the material, $P(z)$ is given by:
+where $Q_0$ is the power at the surface and $\alpha_{abs}$ is the absorption coefficient (not to be confused with the thermal diffusivity, $\alpha$).
+
+Finding the $q$ for a given voxel requires choosing a $Q_y$ value to represent the voxel which will become less accurate with increasing voxel dimensions.  To mitigate this, the $Q_y$ can be found by integrating the power distribution across the voxel height, shown here:
 
 $$
-P(z) = P_0 \cdot e^{-\alpha z}
+Q_y = \int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy
 $$
 
-where $P_0$ is the power at the surface and $\alpha_{abs}$ is the absorption coefficient (not to be confused with the thermal diffusivity, $\alpha$).
-
-(3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.
-
-And so the power absorbed in a given area element $\Delta y$ is given as:
+(2) Due to the top-hat distribution of the beam in this particular case, the radial/azimuthal distribution (i.e., horizontal cross-sections) is indeed roughly homogeneous/isotropic and therefore independent of x and z (within the bounds of the beam). So, at a given depth, $y$, the area power $Q_{\Delta x \Delta z}$ can be described by its fraction of the circular cross section across the cylinder:
 
 $$
-P_{\Delta x\Delta y} = P_0 \cdot (e^{-\alpha z} - 1) \cdot e^{-\alpha (z + \Delta z)}
+Q_{\Delta x\Delta z} = Q_y\frac{\Delta x \cdot \Delta z}{\pi r^2} 
 $$
+
+which makes the power density, $q$, for a given voxel:
+
+$$
+q_{xyz} = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
+$$
+
+(3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.  Given the above formulations for q, this should not impact the simulation accuracy, but for any other purposes, the transmittance through the entire height, $h$, of the material can be found by:
+
+$$
+\%T = \frac{\int_{h}^{\infty} Q \cdot e^{-\alpha y} dy}{Q} \cdot 100\%
+$$
+
 ### Convection Boundary
 
 Above relations do not apply at convection boundaries and must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation is given by [Holman p. 170]:
@@ -125,32 +138,19 @@ $$
 \frac{(\Delta x)^2}{\alpha \Delta \tau} >= 2 (\frac{h \Delta x}{k} + 1)
 $$
 
-
 ### Combining all Three Cases
 
 And so with each 
 
-### Extending to 3D with Cylindrical Symmetry
-The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:
+## implementing DSC data for cure profiles
 
-$$
-\frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{1}{r^2} \frac{\partial^2 T}{\partial \theta^2} + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
-$$
+asdf
 
-Due to the symmetry of the system, the temperature is independent of the azimuthal angle, $\theta$, and so the heat equation reduces to:
+## fitting penetration and T profiles to model
 
-$$
-\frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
-$$
+asdf
 
-Which is described by the 2D numerical solutions above. 
-
-
-- [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
-- [p. 99] Guass-Seidel iterative method convergence
-- [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
-
-### physical parameter notes
+## physical parameter notes
 
 - "low power" is 1.3 W/cm2
 - "high power" is 40 W/cm2
@@ -159,6 +159,8 @@ Which is described by the 2D numerical solutions above.
 - heat capacity, specific (PDMS) = 1 J/gK
 - temperature, ambient (air) = 20 C
 - data cut off early when fires started or the fiber optics were becoming damaged
+
+## example images
 
 ### thermal profile - laser - 5 s
 
@@ -185,3 +187,24 @@ Which is described by the 2D numerical solutions above.
   - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
   - T distribution never appears to decay into the depth though q shows a tapering (even with $\Delta \tau$ = 0.005 and Nx/y/z = 100 and at higher t values)
 - find real absorption coefficient for CB loadings
+
+## misc
+### Extending to 3D with Cylindrical Symmetry (ignore for now)
+The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:
+
+$$
+\frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{1}{r^2} \frac{\partial^2 T}{\partial \theta^2} + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
+$$
+
+Due to the symmetry of the system, the temperature is independent of the azimuthal angle, $\theta$, and so the heat equation reduces to:
+
+$$
+\frac{1}{r} \frac{\partial}{\partial r} \left( r \frac{\partial T}{\partial r} \right) + \frac{\partial^2 T}{\partial z^2} = \frac{1}{\alpha} \frac{\partial T}{\partial t}
+$$
+
+Which is described by the 2D numerical solutions above. 
+
+
+- [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
+- [p. 99] Guass-Seidel iterative method convergence
+- [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
