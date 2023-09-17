@@ -197,7 +197,7 @@ the considerations are complete.
 
 ## improved accuracy with Runge-Kutta implementation
 
-The Runge-Kutta 4th Order Method (RK4) is a widely used numerical technique for computational efficiency with sometimes drastic improvements to accuracy over a vanilla Euler method approach.  Given an ODE of the form:
+The Runge-Kutta 4th Order Method (RK4) is a widely used numerical technique for computational efficiency with sometimes drastic improvements to accuracy over a vanilla Euler method approach for initial value problems such as those common in heat flow.  Given an ODE of the form:
 
 $$
 \frac{dy}{dt} = f(t, y)
@@ -233,7 +233,7 @@ $$
 y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 $$
 
-While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
+Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## pseudo-code
 
