@@ -77,19 +77,21 @@ where $Q_0$ is the power at the surface and $\alpha_{abs}$ is the absorption coe
 Finding the $q$ for a given voxel requires choosing a $Q_y$ value to represent the voxel which will become less accurate with increasing voxel dimensions.  To mitigate this, the $Q_y$ can be found by integrating the power distribution across the voxel height, shown here:
 
 $$
-Q_y = \int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy
+Q_y = \int_{y-\frac{1}{2} \Delta y}^{y + \frac{1}{2}\Delta y} Q_0 \cdot e^{-\alpha y} dy
 $$
+
+Note that the integration bounds here are centered around $y$ but may need changed depending on how this is ultimately implemented in the code.
 
 (2) Due to the top-hat distribution of the beam in this particular case, the radial/azimuthal distribution (i.e., horizontal cross-sections) is indeed roughly homogeneous/isotropic and therefore independent of x and z (within the bounds of the beam). So, at a given depth, $y$, the area power $Q_{\Delta x \Delta z}$ can be described by its fraction of the circular cross section across the cylinder:
 
 $$
-Q_{\Delta x\Delta z} = Q_y\frac{\Delta x \cdot \Delta z}{\pi r^2} 
+Q_{xz} = \frac{\Delta x \cdot \Delta z}{\pi r^2} 
 $$
 
 which makes the power density, $q$, for a given voxel:
 
 $$
-Q_{xyz} = q = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
+q = Q_{xyz} = Q_y \cdot Q_{xz} = \left[\int_{y}^{y + \Delta y} Q_0 \cdot e^{-\alpha y} dy \right] \cdot \left[\frac{\Delta x \cdot \Delta z}{\pi r^2}\right]
 $$
 
 (3) It is also not necessarily the case that all of the power is converted to heat within the material.  For sufficiently low $\alpha _{abs}$, non-negligible power will be transmitted through the length of the material.  Given the above formulations for q, this should not impact the simulation accuracy, but for any other purposes--e.g., incorporation into fit parameters--the transmittance, $T$, through the entire height, $h$, of the material can be found by:
@@ -232,6 +234,21 @@ y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 $$
 
 While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
+
+## pseudo-code
+
+X, Y = Init_2D_Array(length, height, dt)
+T = Init_Temp_Array(X, Y)
+beam_mask = Beam_Mask(X, Y, beamRadius, beamPower)
+for t in duration:
+  for points in X, Y:
+    T = Conduction(T_last, dt)
+    T += HeatSource(beam_mask, dt)
+    T += Convection(T_last, dt)
+    T = BoundaryConditions(T)
+    T = RK(T)
+    T_last = T
+Plot(T)
 
 ## implementing DSC data for cure profiles
 
