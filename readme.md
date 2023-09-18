@@ -236,19 +236,17 @@ $$
 Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## pseudo-code
-
-X, Y = Init_2D_Array(length, height, dt)
-T = Init_Temp_Array(X, Y)
-beam_mask = Beam_Mask(X, Y, beamRadius, beamPower)
-for t in duration:
+T = Init_2D_Array(length, height, dt)
+beam_mask = Beam_Mask(T, beamRadius, beamPower)
+for t in max(simulationTimes):
   for points in X, Y:
-    T = Conduction(T_last, dt)
-    T += HeatSource(beam_mask, dt)
-    T += Convection(T_last, dt)
+    T = RK4(T_last, beam_mask) # RK4 for conduction, heat source, and convection
     T = BoundaryConditions(T)
-    T = RK(T)
     T_last = T
-Plot(T)
+  if t in simulationTimes:
+    temps.append(T)
+Export_NPZ(T, filepath)
+Plot(T, simulationTimes)
 
 ## implementing DSC data for cure profiles
 
