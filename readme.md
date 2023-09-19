@@ -17,13 +17,11 @@
 - find why github isn't loading images or certain equations in readme (e.g., %T)
 
 ### Simulation.py
-- implement exponential decay
-  - go top-down
-  - monitor for artefacts at boundaries from seeking values outside of the array
-- implement CFL condition for dt
+- finalize exponential decay implementation
+  - monitor for artefacts at boundaries from seeking y values outside of the simulation bounds
+- investigate seeming non-reliance of output from Q value
 - modify convection to appear before conduction and follow Holman derivation
-- distinguish absorption from extinction
-- complete the implementation of loading dependence and then other realistic physical values (power, k, diffus., abs. coeff., etc.)
+- distinguish absorption from extinction ?
 - model to experimental data
 - incorporate DSC gelation data
 - visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
@@ -196,7 +194,7 @@ the considerations are complete.
 - low power, $P_{low} = 3 W$
 - high power, $P_{high} = 60 W/cm2$
 - Change with PDMS Loading:
-  - absorption coefficient, $\alpha_{abs} = 0.1 \frac{1}{mm}$ (still need to extract from UV/Vis data)
+  -CB-PDMS absorption coefficient, likely ~$230 m^{-1}$ for high loadings (absorbs 90% by 1cm) and ~$1 m^{-1}$ for low (absorbs 10% by 10cm)
   - PDMS thermal conductivity, $k_{PDMS} = 0.2 \frac{W}{m\cdot{K}}$
 - PDMS density, $\rho_{PDMS} = 1.03 \frac{g}{mL}$
 - PDMS specific heat, $c_{PDMS}=  1.46 \frac{J}{g\cdot K}$
@@ -358,3 +356,4 @@ Which is described by the 2D numerical solutions above.
 - [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
 - [p. 99] Guass-Seidel iterative method convergence
 - [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
+
