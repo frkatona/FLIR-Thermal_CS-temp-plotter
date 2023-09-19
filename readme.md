@@ -17,9 +17,9 @@
 - find why github isn't loading images or certain equations in readme (e.g., %T)
 
 ### Simulation.py
+- investigate seeming non-reliance of output from Q value
 - finalize exponential decay implementation
   - monitor for artefacts at boundaries from seeking y values outside of the simulation bounds
-- investigate seeming non-reliance of output from Q value
 - modify convection to appear before conduction and follow Holman derivation
 - distinguish absorption from extinction ?
 - model to experimental data

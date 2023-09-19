@@ -9,16 +9,16 @@ height = 3  # height of the simulation space, m
 T_0 = 25.0  # Temperature at t = 0, °C
 T_air = 25.0  # Temperature of the surrounding air, °C
 h_conv = 10.0  # Convective heat transfer coefficient, W/(m^2 K)
-Q = 100  # Total heat generation rate, W, artificially high for troubleshooting
+Q = 0.1  # Total heat generation rate, W, artificially high for troubleshooting
 loading = 1e-6  # mass fraction of CB in PDMS, g/g
 
-PDMS_thermal_conductivity_WpmK = 0.2 + loading
+PDMS_thermal_conductivity_WpmK = 0.2 + loading # TC lerps between 0.2 and 0.3 over the loading range 0% to 10%
 PDMS_density_gpmL = 1.02
 PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
-beam_radius_m = 0.5
-abs_coeff = 1 + (loading * 2300) # abs lerps between 1 and ~230 over the loading range of 0% to 10%
+beam_radius_m = 0.3
+abs_coeff = 0.01 + (loading * 2300) # abs lerps between 0.01 and ~230 over the loading range of 0% to 10%
 
 ## simulation parameters ##
 Nx = Ny = 50
@@ -29,11 +29,11 @@ X, Y = sim.np.meshgrid(x, y)
 
 beam_mask = X <= beam_radius_m
 q = sim.np.zeros((Nx, Ny))
-Q_abs = Q / (sim.np.pi * beam_radius_m**2 * height)  # before implementing exponential decay
-q[beam_mask] = Q / Q_abs / dx**3
+Q_volume = sim.np.pi * beam_radius_m**2 * height
+q[beam_mask] = Q / Q_volume / dx**3
 q = sim.set_up_volumetric_power_distribution(q, beam_mask, abs_coeff, dx, dy, height)
 transmittance, absorbed_power = sim.Preview_Decay(q, dx, dy, Q, height)
-output_times = [0, 1, 3, 5]
+output_times = [0, 0.1, 0.5, 1, 2]
 
 #############################
 ### MAIN CODE STARTS HERE ###

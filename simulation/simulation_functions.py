@@ -104,7 +104,7 @@ def Plot_T_Slices(X, Y, output_temperatures, output_times, height):
     '''plots slices of T at each output time'''
     ticks = 15
     Tmin = 20
-    Tmax = 300
+    Tmax = 1000
     num_times = len(output_times)
     fig, axes = plt.subplots(1, num_times, figsize=(4*num_times, 4))
     custom_cmap = plt.cm.get_cmap('hot', ticks) # also, 'coolwarm'
@@ -115,7 +115,7 @@ def Plot_T_Slices(X, Y, output_temperatures, output_times, height):
         ax.set_title(f't = {output_times[i]} s')
         ax.set_xlabel('x (m)')
         ax.set_ylabel('y (m)')
-        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(Tmin, Tmax, ticks-1))
+        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(Tmin, Tmax, (Tmax-Tmin)//ticks))
     plt.tight_layout()
     plt.show()
 
