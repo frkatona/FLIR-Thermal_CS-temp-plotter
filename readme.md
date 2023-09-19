@@ -16,19 +16,17 @@
 ### QoL
 - find why github isn't loading images or certain equations in readme (e.g., %T)
 
-### Simulation-3D (soon to be deprecated)
-- refactor simulation for cylindrical symmetry
-- investigate bugs
-  - beam mask not being appropriately applied to the T updates
-  - npz and print temperatures don't reflect the temperatures  in the graph
-  - transmittance shows % <<0 and >>100 (problem with how I'm discretizing power?)
-  - T distribution never appears to decay into the depth though q shows a tapering (even with $\Delta \tau$ = 0.005 and Nx/y/z = 100 and at higher t values)
-- find real absorption coefficient for CB loadings
-
-### Simulation-Cylinder
-- get graphs of xy slices
+### Simulation.py
+- implement exponential decay
+  - go top-down
+  - monitor for artefacts at boundaries from seeking values outside of the array
+- implement CFL condition for dt
+- modify convection to appear before conduction and follow Holman derivation
+- distinguish absorption from extinction
+- complete the implementation of loading dependence and then other realistic physical values (power, k, diffus., abs. coeff., etc.)
 - model to experimental data
 - incorporate DSC gelation data
+- visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
 
 ## unsteady-state numerical considerations (*J.P. Holman*, 2010)
 
@@ -102,7 +100,7 @@ $$
 
 ### Convection Boundary
 
-Above relations do not apply at convection boundaries which must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation for a convection boundary is given by [Holman p. 170]:
+Above relations do not apply at convection boundaries which must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation for a convection boundary is given by Holman (p. 170):
 
 $$
 -k\frac{\Delta y}{\Delta x} (T_{m+1} - T_{m}) = h \Delta y (T_{m+1} - T_{\infty})
@@ -122,18 +120,32 @@ $$
 
 Though it is noted that error at the convection boundary is generally inherently large and thus in-depth considerations as such--short of egregious negligence--are not necessarily warranted.
 
+Holman (p. 171) recommends finding this convective temperature first and then calculating the bulk node T values for that time step.
+
 ### Satisfying the CFL Condition
 
-For all such systems, convergence relies on a specific relationship between time and space increments and the velocity magnitude ($\alpha$ in this case), known as the Courant-Friedrichs-Lewy (CFL) condition.  For 2D cases such as those presented in equations 1 and 2, the following relationship assures compliance with the CFL condition:
+For all such systems, convergence relies on a specific relationship between time and space increments and the velocity magnitude ($\alpha$ in this case), known as the Courant-Friedrichs-Lewy (CFL) condition.  For conductive 2D cases, the following relationship determines compliance with the CFL condition:
 
 $$
-M = \frac{(\Delta x)^2}{\alpha \Delta \tau} \geq 4
+\frac{(\Delta x)^2}{\alpha \Delta \tau} \geq 4
 $$
 
-Under this condition, $T$ at node $(m, n)$ after $\Delta \tau$ is simply the average of the four surrounding nodes.  At the convective boundary in equation 3, the CFL condition is given by:
+Which rearranges to:
+
+$$
+\Delta \tau \leq \frac{(\Delta x)^2}{4 \alpha}
+$$
+
+The convective boundary in equation 3 requires further consideration.  Its CFL condition is satisfied by:
 
 $$
 \frac{(\Delta x)^2}{\alpha \Delta \tau} >= 2 (\frac{h \Delta x}{k} + 1)
+$$
+
+and so:
+
+$$
+\Delta \tau \leq \frac{(\Delta x)^2}{2 \alpha (\frac{h \Delta x}{k} + 1)}
 $$
 
 ### Condition Summary
@@ -236,17 +248,34 @@ $$
 Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## pseudo-code
-T = Init_2D_Array(length, height, dt)
-beam_mask = Beam_Mask(T, beamRadius, beamPower)
-for t in max(simulationTimes):
-  for points in X, Y:
-    T = RK4(T_last, beam_mask) # RK4 for conduction, heat source, and convection
-    T = BoundaryConditions(T)
-    T_last = T
-  if t in simulationTimes:
-    temps.append(T)
-Export_NPZ(T, filepath)
-Plot(T, simulationTimes)
+
+    dx = dy
+
+    dt = CFL(dx, alpha, h, k)
+
+    T = Init_2D_Array(length, height, dt)
+
+    beam_mask = Beam_Mask(T, beamRadius, beamPower)
+
+    for t in max(simulationTimes):
+
+      for points in X, Y:
+
+        T = RK4(T_last, beam_mask) # RK4 for conduction, heat source, and convection
+
+        T = BoundaryConditions(T)
+
+        T_last = T
+
+      if t in simulationTimes:
+
+        temps.append(T)
+
+    Export_NPZ(T, filepath)
+
+    Plot(T, simulationTimes)
+
+
 
 ## implementing DSC data for cure profiles
 
@@ -306,6 +335,8 @@ $$
 [CONSIDER if the volumetric heat application in eq2 is correct]
 
 [CONSIDER if y integrations should be from y->(y+dy) or (y-1/2 dy)->(y+1/2 dy)]
+
+[CONSIDER if T^4 radiative transfer is non-negligible for the predicted temperatures (look into the Stefan-Boltzmann and emissivity values for PDMS)]
 
 ### Extending to 3D with Cylindrical Symmetry (ignore for now)
 The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:

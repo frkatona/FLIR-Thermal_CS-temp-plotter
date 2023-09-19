@@ -1,47 +1,37 @@
 import numpy as np
-from scipy.integrate import quad
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from scipy.integrate import quad
 
+def compute_volumetric_power(y_mid, dy, Q_0, abs_coeff):
+    """
+    Compute the volumetric power for a voxel based on its vertical position using the Beer-Lambert law.
+    Integrate the power distribution across the voxel height.
+    """
+    y_start = y_mid - dy / 2
+    y_end = y_mid + dy / 2
+    power_integral, _ = quad(lambda y: Q_0 * np.exp(-abs_coeff * (height-y)), y_start, y_end)
 
-## materials system parameters ##
-height = 10  # height of the simulation space, m
-T_0 = 25.0  # Temperature at t = 0, °C
-T_air = 25.0  # Temperature of the surrounding air, °C
-h_conv = 10.0  # Convective heat transfer coefficient, W/(m^2 K)
-Q = 1  # Total heat generation rate, W, artificially high for troubleshooting
-loading = 1e-6  # mass fraction of CB in PDMS, g/g
+    return power_integral / dy
 
-PDMS_thermal_conductivity_WpmK = 0.2 + loading  # W/mK, should lerp 0.2 to 0.3 as loading increases from 0 to 0.1
-PDMS_density_gpmL = 1.02
-PDMS_heat_capacity_JpgK = 1.67
-PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
-
-## heat source parameters ##
-beam_radius_m = 0.5
-abs_coeff = 0.01 # 0.001 + (loading * 1000)  # absorption coefficient of CB in PDMS, m^-1, should lerp from transparent to opaque with loading
-
-## mesh-grid parameters ##
-Nx, Ny = 101, 101  # Number of grid points in each dimension
-dx = height / (Nx - 1)  # Grid spacing in the x direction, m
-dy = height / (Ny - 1)  # Grid spacing in the z direction, m
-dt = 0.01  # Time step, s
-x = np.linspace(0, height, Nx)
-y = np.linspace(0, height, Ny)
-X, Y = np.meshgrid(x, y)
-
-beam_mask = X <= beam_radius_m
-q = np.zeros((Nx, Ny))
-Q_abs = Q / (np.pi * beam_radius_m**2 * height) # before implementing exponential decay
-q[beam_mask] = Q / Q_abs / dx**3
+def set_up_volumetric_power_distribution(q, beam_mask, abs_coeff, dx, dy):
+    """
+    Sets up the volumetric power distribution using the Beer-Lambert law.
+    """
+    Q_0 = q.max()  # max power density, found where beam_mask is True
+    Ny, Nx = q.shape
+    for j in range(Nx):
+        for i in range(Ny):
+            if beam_mask[i, j]:
+                y_mid = i * dy
+                q[i, j] = compute_volumetric_power(y_mid, dy, Q_0, abs_coeff)
+    return q
 
 def Preview_Decay(q, dx, dy, Q):
     '''troubleshooting power contained within system'''
-    # transmittance equals Q times the integral of exp(-abs_coeff * y) from height to infinity
-    transmittance = (Q - np.sum(q * dx**3)) / Q
-    print(f'Transmittance through material: {transmittance:.2%}')
-    print(f'max q (W): {np.max(q) * dx * dy:.2e}')
+    absorbed_power = np.sum(q * dx * dy)
+    transmittance = (Q - absorbed_power) / Q
 
+    # Plot the distribution of q to visualize the power distribution within the material
     plt.figure(figsize=(8, 6))
     plt.imshow(q, extent=[0, height, 0, height], origin='lower', cmap='hot')
     plt.colorbar(label='Power Density (W/m^2)')
@@ -49,6 +39,8 @@ def Preview_Decay(q, dx, dy, Q):
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
     plt.show()
+    
+    return transmittance, absorbed_power
 
 def laplacian_2D(T, dx, dy):
     """
@@ -56,6 +48,13 @@ def laplacian_2D(T, dx, dy):
     """
     d2Tdx2 = (np.roll(T, -1, axis=0) - 2*T + np.roll(T, 1, axis=0)) / dx**2
     d2Tdy2 = (np.roll(T, -1, axis=1) - 2*T + np.roll(T, 1, axis=1)) / dy**2
+
+    # Reset boundary values
+    d2Tdx2[0, :] = d2Tdy2[0, :] = 0
+    d2Tdx2[-1, :] = d2Tdy2[-1, :] = 0
+    d2Tdx2[:, 0] = d2Tdy2[:, 0] = 0
+    d2Tdx2[:, -1] = d2Tdy2[:, -1] = 0
+    
     return d2Tdx2 + d2Tdy2
 
 def RK4(T, dt, dx, dy, thermal_diffusivity, q):
@@ -74,11 +73,11 @@ def RK4(T, dt, dx, dy, thermal_diffusivity, q):
 def Boundary_Conditions(T_new):
     '''applies boundary conditions'''
     ## adiabatic edges ##
-    T_new[Ny, :] = T_new[Ny-1, :]
-    T_new[:, 0] = T_new[:, 1]
-    T_new[:, Nx] = T_new[:, Nx-1]
+    T_new[0 , : ] = T_new[1 , : ]
+    T_new[ : , 0] = T_new[ : , 1]
+    T_new[ : , -1] = T_new[ : , -2]
     ## convective top ##
-    T_new[0:, -1] = T_new[:, -1] - h_conv * (T_new[:, -1] - T_air) * dt / dy
+    T_new[-1, : ] = T_new[-1, : ] - h_conv * (T_new[-1, : ] - T_air) * dt / dy # fix to perform before conduction and follow the Holman derivation, maybe within RK4?
     return T_new
 
 def Compute_T(output_times):
@@ -127,11 +126,46 @@ def save_output_temperatures(output_temperatures, filename):
     """
     np.savez(filename, *output_temperatures)
 
-### MAIN CODE ###
-# Preview_Decay(q, dx, dy, Q)
+#############################
+###          INIT         ###
+#############################
 
+## physical constants ##
+height = 10  # height of the simulation space, m
+T_0 = 25.0  # Temperature at t = 0, °C
+T_air = 25.0  # Temperature of the surrounding air, °C
+h_conv = 10.0  # Convective heat transfer coefficient, W/(m^2 K)
+Q = 1  # Total heat generation rate, W, artificially high for troubleshooting
+loading = 1e-6  # mass fraction of CB in PDMS, g/g
+
+PDMS_thermal_conductivity_WpmK = 0.2 + loading
+PDMS_density_gpmL = 1.02
+PDMS_heat_capacity_JpgK = 1.67
+PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
+
+beam_radius_m = 0.5
+abs_coeff = 1
+
+## simulation parameters ##
+Nx = Ny = 101
+dx = dy = height / (Nx - 1)
+dt = 0.01
+x = y = np.linspace(0, height, Nx)
+X, Y = np.meshgrid(x, y)
+
+beam_mask = X <= beam_radius_m
+q = np.zeros((Nx, Ny))
+Q_abs = Q / (np.pi * beam_radius_m**2 * height)  # before implementing exponential decay
+q[beam_mask] = Q / Q_abs / dx**3
+q = set_up_volumetric_power_distribution(q, beam_mask, abs_coeff, dx, dy)
+transmittance, absorbed_power = Preview_Decay(q, dx, dy, Q)
+
+#############################
+### MAIN CODE STARTS HERE ###
+#############################
+
+# Preview_Decay(q, dx, dy, Q)
 output_times = [0, 1, 3, 5]
 output_temperatures_RK = Compute_T(output_times)
-
 Plot_T_Slices(X, Y, output_temperatures_RK, output_times)
-save_output_temperatures(output_temperatures_RK, "output_temperatures.npz")
+# save_output_temperatures(output_temperatures_RK, "output_temperatures.npz")
