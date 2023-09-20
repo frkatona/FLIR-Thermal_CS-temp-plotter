@@ -2,34 +2,37 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
-def compute_volumetric_power(y_mid, dy, Q_0, abs_coeff, height):
+def Integrate_Power_dy(y_mid, dy, Q_0, abs_coeff, height):
     """
     Compute the volumetric power for a voxel based on its vertical position using the Beer-Lambert law.
     Integrate the power distribution across the voxel height.
     """
     y_start = y_mid - dy / 2
     y_end = y_mid + dy / 2
-    power_integral, _ = quad(lambda y: Q_0 * np.exp(-abs_coeff * (height-y)), y_start, y_end)
-
+    power_integral, _ = quad(lambda y: Q_0 * np.exp(-abs_coeff * (height - y)), y_start, y_end)
     return power_integral / dy
 
-def set_up_volumetric_power_distribution(q, beam_mask, abs_coeff, dx, dy, height):
+def Volumetric_Power(beam_mask, abs_coeff, beam_radius_m, dy, height, Q):
     """
     Sets up the volumetric power distribution using the Beer-Lambert law.
     """
-    Q_0 = q.max()  # max power density, found where beam_mask is True
-    Ny, Nx = q.shape
+    Ny, Nx = beam_mask.shape
+    q = np.zeros((Ny, Nx))
+    
+    Q_0 = Q / (np.pi * beam_radius_m**2)  # Average power density over the beam area
+    
     for j in range(Nx):
         for i in range(Ny):
             if beam_mask[i, j]:
                 y_mid = i * dy
-                q[i, j] = compute_volumetric_power(y_mid, dy, Q_0, abs_coeff, height)
+                q[i, j] = Integrate_Power_dy(y_mid, dy, Q_0, abs_coeff, height)
+                
     return q
 
-def Preview_Decay(q, dx, dy, Q, height):
+def Preview_Decay(q, Q, height):
     '''troubleshooting power contained within system'''
-    absorbed_power = np.sum(q * dx * dy)
-    transmittance = (Q - absorbed_power) / Q
+    absorbed_power = np.sum(q)
+    transmittance = (Q - absorbed_power) / Q * 100
 
     # Plot the distribution of q to visualize the power distribution within the material
     plt.figure(figsize=(8, 6))
@@ -77,7 +80,7 @@ def Boundary_Conditions(T_new, h_conv, T_air, dt, dy):
     T_new[ : , 0] = T_new[ : , 1]
     T_new[ : , -1] = T_new[ : , -2]
     ## convective top ##
-    T_new[-1, : ] = T_new[-1, : ] - h_conv * (T_new[-1, : ] - T_air) * dt / dy # fix to perform before conduction and follow the Holman derivation, maybe within RK4?
+    T_new[-1, : ] = T_new[-1, : ] - h_conv * (T_new[-1, : ] - T_air) * dt / dy 
     return T_new
 
 def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air):
@@ -94,20 +97,17 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
         
         if n in output_indices:
             output_temperatures.append(T.copy())
-
-        if np.any(T) > 26: # troubleshooting problem where T never changes but the plots show it does
-            print(T)
            
     return output_temperatures
 
-def Plot_T_Slices(X, Y, output_temperatures, output_times, height):
+def Plot_T_Slices(output_temperatures, output_times, height):
     '''plots slices of T at each output time'''
-    ticks = 15
+    ticks = 10
     Tmin = 20
-    Tmax = 1000
+    Tmax = 200
     num_times = len(output_times)
     fig, axes = plt.subplots(1, num_times, figsize=(4*num_times, 4))
-    custom_cmap = plt.cm.get_cmap('hot', ticks) # also, 'coolwarm'
+    custom_cmap = plt.cm.get_cmap('hot', ticks-1) # also, 'coolwarm'
     for i, T_out in enumerate(output_temperatures):
         ax = axes[i]
         c = ax.imshow(T_out, extent=[0, height, 0, height], origin='lower', 
@@ -115,17 +115,6 @@ def Plot_T_Slices(X, Y, output_temperatures, output_times, height):
         ax.set_title(f't = {output_times[i]} s')
         ax.set_xlabel('x (m)')
         ax.set_ylabel('y (m)')
-        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(Tmin, Tmax, (Tmax-Tmin)//ticks))
+        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(Tmin, Tmax, (Tmax-Tmin)//(ticks)))
     plt.tight_layout()
     plt.show()
-
-def save_output_temperatures(output_temperatures, filename):
-    """
-    Save the output temperatures to a file.
-    
-    Parameters:
-    - output_temperatures: List of 2D numpy arrays containing temperature data.
-    - filename: Name of the file to save the data to.
-    """
-    np.savez(filename, *output_temperatures)
-
