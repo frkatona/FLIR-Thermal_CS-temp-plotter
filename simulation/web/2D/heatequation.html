@@ -1,35 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Heat Equation Simulation</title>
-  <link rel="stylesheet" type="text/css" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Heat Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
-<body>
-  <div id="simulationWrapper">
-    <div id="canvasWrapper">
-      <canvas id="canvas" width="300" height="300"></canvas>
+<body class="dark-mode">
+    <div class="input-section">
+        <label>Height: <input type="number" id="height" value="0.1"></label>
+        <!-- Add other parameter input fields similarly -->
+        <button onclick="runSimulation()">Run Simulation</button>
+        <span id="loadingIndicator" style="visibility: hidden;">Simulation running...</span>
     </div>
-    <div id="scaleWrapper"></div>
-  </div>
-    </div>
-    <div id="time">
-      <p>t = <span id="timeElapsed">0</span>s</p>
-    </div>
-    <div id="controlsBox">
-      <div id="playRestart">
-        <button id="restartButton"><i class="fas fa-undo-alt"></i></button>
-        <button id="playPauseButton"><i class="fas fa-play"></i></button>
-      </div>
-      <div><label>T0 (circle) (°C): </label><input type="number" id="T0Circle" value="1000"></div>
-      <div><label>T0 (plate) (°C): </label><input type="number" id="T0Rest" value="25"></div>
-      <div><label>circle size: </label><input type="number" id="circleRadius" value="0.1" step="0.01"></div>
-      <div><label>time step (s): </label><input type="number" id="t_stepSize" value="0.1" step="0.01"></div>
-      <div><label>thermal diffusivity: </label><input type="number" id="thermalDiffusivity" value="0.1"></div>
-      
-    </div>
-    <div id="scaleWrapper"></div>
-  </div>
-  <script src="main.js"></script>
+
+    <div id="powerDensityPlot" class="results-section"></div>
+    <div id="temperaturePlot" class="results-section"></div>
+
+    <script src="script.js"></script>
 </body>
 </html>

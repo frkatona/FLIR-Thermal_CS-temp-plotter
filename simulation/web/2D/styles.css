@@ -1,80 +1,37 @@
-body, label, p, button {
-  font-family: 'Arial', sans-serif;
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-#mainWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.dark-mode {
+  background-color: #333;
+  color: #eee;
 }
 
-#simulationWrapper {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  width: 100%;
+.dark-mode input, .dark-mode button, .dark-mode label {
+  background-color: #555;
+  color: #eee;
+  border: 1px solid #888;
 }
 
-#controlsBox, #infoBox {
-  border: 1px solid black;
-  padding: 1em;
-  margin: 1em;
-  text-align: left;
+.input-section {
+  margin-bottom: 20px;
 }
 
-#controlsBox {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+.input-section label,
+.input-section input,
+.input-section button {
+  margin-right: 10px;
+  color: inherit;  /* ensures text remains readable in dark mode */
 }
 
-#controlsBox div {
-  margin-bottom: 10px;
+.results-section {
+  width: 80%;
+  margin: 20px auto;
 }
 
-#canvasWrapper {
-  position: relative;
-  text-align: center;
-}
-
-#time{
-  position: absolute;
-  top: 25%;
-  left: 20%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  font-weight: bold;
-}
-
-#playPause {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-#playRestart{
-  position: absolute;
-  top: 60%;
-  left: 45%;
-  transform: translate(-50%, -50%);
-}
-
-#scaleWrapper {
-  margin-left: 20px;
-}
-
-.scaleBlock {
-  width: 20px;
-}
-
-#scaleMin, #scaleMax {
-  width: 100%;
-  text-align: center;
-}
-
-button {
-  font-size: 24px;
-  width: 48px;
-  height: 48px;
+#loadingIndicator {
+  color: red;
+  margin-left: 10px;
 }

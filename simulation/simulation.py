@@ -1,49 +1,40 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
+import time
 
-def Integrate_Power_dy(y_mid, dy, Q_dx, abs_coeff, height):
+def Integrate_Area_Power(y_mid, dy, Q_dx, abs_coeff, height):
     """
-    Compute the volumetric power for a voxel based on its vertical position using the Beer-Lambert law.
-    Integrate the power distribution across the voxel height.
+    Compute the power for a discrete unit area based on its vertical position
+    using the Beer-Lambert law and integrating across the depth.
     """
     y_start = y_mid - dy / 2
     y_end = y_mid + dy / 2
-    power_integral, _ = quad(lambda y: Q_dx * np.exp(-abs_coeff * (height - y)), y_start, y_end)
-    return power_integral / dy
+    power_integral, _ = quad(lambda y: np.exp(-abs_coeff * (height - y)), y_start, y_end)
+    P_area = power_integral * Q_dx
+    return P_area
 
-def Computer_Power_2d(X, abs_coeff, beam_radius_m, dx, height, Q):
+def Compute_Power_Source_Distribution(X, abs_coeff, beam_radius_m, dx, height, Q):
     """
-    Sets up the volumetric power distribution using the Beer-Lambert law.
+    Returns the power distribution 2D array within material
+    considering Beer's law decay and laser position.
     """
     beam_mask = X <= beam_radius_m
+    # beam_mask *= scale this to exopnential
+    # then just throw in Q (in gpt)
     q = np.zeros((Ny, Nx))
-    Q_dx = (Q / circular_crossSection) / dx
+    Nx_beam = Nx * (height / beam_radius_m)
+    Q_dx = (Q / circular_crossSection) / Nx_beam  # * dx # power contained within a length dx of a radial slice of the beam
     
-    # for every y, distribute area power across its x if in beam
+    # for every column, determine Beer's Law power contained in its row elements and apply it to the truthy beam mask
     for i in range(Ny):
         y_mid = i * dy
-        q_dxdy = Integrate_Power_dy(y_mid, dy, Q_dx, abs_coeff, height)
+        q_dxdy = Integrate_Area_Power(y_mid, dy, Q_dx, abs_coeff, height)
         for j in range(Nx):
-            q[i, j] = (beam_mask[i, j] * q_dxdy) / Nx
+            q[i, j] = (beam_mask[i, j] * q_dxdy)
     
-    return q
+    return  q
 
-def Preview_Decay(q, Q, height):
-    '''graph of the power distribution from the laser beam power source decay'''
-    absorbed_power = np.sum(q)
-    transmittance = absorbed_power / (Q / circular_crossSection) * 100 # only 1 radial slice of the circular beam
-
-    # Plot the distribution of q to visualize the power distribution within the material
-    plt.figure(figsize=(8, 6))
-    plt.imshow(q / 10000, extent=[0, height, 0, height], origin='lower', cmap='hot')
-    plt.colorbar(label='Power Density (W/cm^2)')
-    plt.title('Power Density Distribution')
-    plt.xlabel('x (m)')
-    plt.ylabel('y (m)')
-    plt.show()
-    
-    return transmittance, absorbed_power
 
 def Laplacian_2d(T, dx, dy):
     """
@@ -80,7 +71,8 @@ def Boundary_Conditions(T_new, h_conv, T_air, dt, dy):
     T_new[ : , 0] = T_new[ : , 1]
     T_new[ : , -1] = T_new[ : , -2]
     ## convective top ##
-    T_new[-1, : ] = T_new[-1, : ] - h_conv * (T_new[-1, : ] - T_air) * dt / dy 
+    T_new[-1, : ] = (T_new[-1, : ] + (h_conv * dy / PDMS_thermal_conductivity_WpmK) * T_air) / (1 + h_conv * dy / PDMS_thermal_conductivity_WpmK)
+
     return T_new
 
 def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air):
@@ -90,24 +82,68 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
     output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
     output_temperatures = []
 
+    ## track time for progress print ##
+    start_time = time.time()
+    first_output_time = None
+
     # loop across each necessary time step
     for n in range(max(output_indices) + 1):
         T_new = RK4(T, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q)
         T = Boundary_Conditions(T_new, h_conv, T_air, dt, dy)
         
         if n in output_indices:
+            current_time = time.time()
             output_temperatures.append(T.copy())
+            
+            if first_output_time is None:
+                first_output_time = current_time
+            else:
+                elapsed_time = current_time - first_output_time
+                remaining_indices = len(output_indices) - output_indices.index(n)
+                estimated_time_left = (elapsed_time / output_indices.index(n)) * remaining_indices
+                print(f"Estimated time to completion: {estimated_time_left:.0f} seconds")
+                
+            print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
            
     return output_temperatures
 
-def Plot_T_Slices(output_temperatures, output_times, height):
+def Preview_Decay(q, Q, height):
+    '''graph of the power distribution from the laser beam power source decay'''
+    absorbed_power = np.sum(q)
+    transmittance = absorbed_power / (Q / circular_crossSection) * 100 # only 1 radial slice of the circular beam
+    print(f'dt: {dt:.2e}s (M={M}), transmittance: {transmittance:.2e}%, Q: {Q}W, absorbed power: {absorbed_power:.2e}W')
+
+    # Plot the distribution of q to visualize the power distribution within the material
+    plt.figure(figsize=(8, 6))
+    plt.imshow(q / 10000, extent=[0, height, 0, height], origin='lower', cmap='hot')
+    plt.colorbar(label='Power Density (W/cm^2)')
+    plt.title('Power Density Distribution')
+    plt.xlabel('x (m)')
+    plt.ylabel('y (m)')
+
+    # plot a function of exponential decay from the Beer-Lambert law
+    plt.figure(figsize=(8, 6))
+    plt.plot(np.linspace(0, height, 100), Q * np.exp(-abs_coeff * np.linspace(0, height, 100)), label='power density')
+    plt.xlabel('depth (m)')
+    plt.ylabel('power density (W/m^2)')
+    plt.title('Power Density Decay')
+    plt.ylim(0, Q*1.1)
+    plt.legend()
+    plt.show()
+
+def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, beam_radius_m):  # added parameters Q, loading, and beam_radius_m
     '''plots slices of T at each output time'''
-    ticks = 10
+    # Find the maximum temperature value from the final output
+    max_temp = np.max(output_temperatures[-1])
+    # Compute the highest temperature value that is divisible by 20
+    Tmax = int(np.ceil(max_temp / 20.0) * 20)
     Tmin = 20
-    Tmax = 200
+    ticks = (Tmax - Tmin) // 20 + 1  # Number of discrete colors
+    tick_values = np.linspace(Tmin, Tmax, ticks)  # Tick marks at the center of each discrete color
+
     num_times = len(output_times)
     fig, axes = plt.subplots(1, num_times, figsize=(4*num_times, 4))
-    custom_cmap = plt.cm.get_cmap('hot', ticks-1) # also, 'coolwarm'
+    custom_cmap = plt.cm.get_cmap('hot', ticks-1)
     for i, T_out in enumerate(output_temperatures):
         ax = axes[i]
         c = ax.imshow(T_out, extent=[0, height, 0, height], origin='lower', 
@@ -115,48 +151,48 @@ def Plot_T_Slices(output_temperatures, output_times, height):
         ax.set_title(f't = {output_times[i]} s')
         ax.set_xlabel('x (m)')
         ax.set_ylabel('y (m)')
-        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=np.arange(Tmin, Tmax, (Tmax-Tmin)//(ticks)))
+        fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=tick_values, fraction = .05)
     plt.tight_layout()
-    # plt.title(f'temperature distribution for Q = {Q} W, loading = {loading*100}%, and beam radius = {beam_radius_m} m')
+    fig.suptitle(f'temperature distribution for Q = {Q} W, loading = {loading:.0e}, and beam radius = {beam_radius_m} m')
     plt.show()
+
 
 #############################
 ###       PARAMETERS      ###
 #############################
 
 ## physical constants ##
-height = 0.2  # height of the simulation space, m
-T_0 = 25.0  # Temperature at t = 0, °C
-T_air = 25.0  # Temperature of the surrounding air, °C
-h_conv = 10.0  # Convective heat transfer coefficient, W/(m^2 K)
-Q = 30 # Total heat generation rate, W, (i.e., laser power)
-loading = 1e-4  # mass fraction of CB in PDMS, g/g
+height = 10  # height of the simulation space, m
+T_0 = 20.0  # Temperature at t = 0, °C
+T_air = 20.0  # Temperature of the surrounding air, °C
+h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
+Q = 30  # Total heat generation rate, W, (i.e., laser power)
+loading = 1e-3  # mass fraction of CB in PDMS, g/g
 
 PDMS_thermal_conductivity_WpmK = 0.2 + loading # TC lerps between 0.2 and 0.3 over the loading range 0% to 10%
 PDMS_density_gpmL = 1.02
 PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
-beam_radius_m = 0.05
+beam_radius_m = .5
 circular_crossSection = np.pi * beam_radius_m**2
 abs_coeff = 0.01 + (loading * 2300) # abs lerps between 0.01 and ~230 over the loading range of 0% to 10%
 
 ## simulation parameters ##
-Nx = Ny = 150
+Nx = Ny = 50
 dx = dy = height / (Nx - 1)
 M = 4
 dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s 
 x = y = np.linspace(0, height, Nx)
 X, Y = np.meshgrid(x, y)
 
-output_times = [0, 1, 5, 10]
+output_times = [0, 0.5, 5, 10, 30, 60]
 
 #############################
 ###          MAIN         ###
 #############################
 if __name__ == '__main__':
-    q = Computer_Power_2d(X, abs_coeff, beam_radius_m, dy, height, Q)
-    transmittance, absorbed_power = Preview_Decay(q, Q, height)
-    print(f'dt: {dt:2e}s (M={M}), transmittance: {transmittance:3g}%, Q: {Q}W, absorbed power: {absorbed_power:3g}W')
+    q = Compute_Power_Source_Distribution(X, abs_coeff, beam_radius_m, dy, height, Q)
+    Preview_Decay(q, Q, height)
     output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air)
-    Plot_T_Slices(output_temperatures_RK, output_times, height)
+    Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, beam_radius_m)

@@ -15,18 +15,24 @@
 
 ### QoL
 
-- implement a progress printout (e.g., print whenever a height % y = 10 or something)
 - find why github isn't loading images or certain equations in readme (e.g., %T)
+- consider optimization package like numba
 
 ### Simulation.py
 
+- investigate why decay is not being observed even at low loadings when the simulation space is realistic (decay fine when simulation is large)
 - investigate excess sum(q) relative to Q (also consider that the simulation is a slice of only half the beam in transmittance calculation)
 - investigate seeming non-reliance of output from Q value
 - finalize exponential decay implementation
   - monitor for artefacts at boundaries from seeking y values outside of the simulation bounds
-- modify convection to appear before conduction and follow Holman derivation
-- distinguish absorption from extinction ?
+- modify convection to appear before conduction (?)
+- distinguish absorption from extinction (?)
 - model to experimental data
+ - t = 60 s
+ - 1e-4 (min)
+ - 1e-6 (min, max)
+ - 1e-7 (min, max)
+ - 0 (max)
 - incorporate DSC gelation data
 - visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
 
@@ -360,4 +366,4 @@ Which is described by the 2D numerical solutions above.
 - [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
 - [p. 99] Guass-Seidel iterative method convergence
 - [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
-
+- https://levelup.gitconnected.com/solving-2d-heat-equation-numerically-using-python-3334004aa01a also does a great job explaining
