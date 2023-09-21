@@ -14,10 +14,12 @@
 ## to-do
 
 ### QoL
+
 - implement a progress printout (e.g., print whenever a height % y = 10 or something)
 - find why github isn't loading images or certain equations in readme (e.g., %T)
 
 ### Simulation.py
+
 - investigate excess sum(q) relative to Q (also consider that the simulation is a slice of only half the beam in transmittance calculation)
 - investigate seeming non-reliance of output from Q value
 - finalize exponential decay implementation
