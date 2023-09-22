@@ -162,19 +162,19 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, beam_ra
 #############################
 
 ## physical constants ##
-height = 10  # height of the simulation space, m
+height = .1  # height of the simulation space, m
 T_0 = 20.0  # Temperature at t = 0, °C
 T_air = 20.0  # Temperature of the surrounding air, °C
 h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
-Q = 30  # Total heat generation rate, W, (i.e., laser power)
-loading = 1e-3  # mass fraction of CB in PDMS, g/g
+Q = 300000  # Total heat generation rate, W, (i.e., laser power)
+loading = 1e-4  # mass fraction of CB in PDMS, g/g
 
 PDMS_thermal_conductivity_WpmK = 0.2 + loading # TC lerps between 0.2 and 0.3 over the loading range 0% to 10%
 PDMS_density_gpmL = 1.02
 PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
-beam_radius_m = .5
+beam_radius_m = .01
 circular_crossSection = np.pi * beam_radius_m**2
 abs_coeff = 0.01 + (loading * 2300) # abs lerps between 0.01 and ~230 over the loading range of 0% to 10%
 
@@ -183,6 +183,9 @@ Nx = Ny = 50
 dx = dy = height / (Nx - 1)
 M = 4
 dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s 
+dt_CFL_conv = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
+if dt_CFL_conv < dt:
+    dt = dt_CFL_conv
 x = y = np.linspace(0, height, Nx)
 X, Y = np.meshgrid(x, y)
 

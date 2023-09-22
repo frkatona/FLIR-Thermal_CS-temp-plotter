@@ -1,11 +1,17 @@
 # FLIR thermal image-to-temperature-crosssection converter/plotter
 
-- takes folder of FLIR images
-- re-maps temperature profiles to a shared scale with custom range and colormap
-- plots slice of values across the highest temperature point in each image
-- plots log fit of the highest temperature pixel vs time
+be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion!
 
-## using the FLIR image analyzer
+- input FLIR thermal images
+- extract thermal and exif data
+- reconstruct thermal images and thermal profile workups
+- simulate the CB-PDMS-laser system for modeling to thermal profile and transmittance data
+
+## using the FLIR side-view image analyzer
+- put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
+- run the 
+
+## using the FLIR top-down image analyzer
 
 - put all images in a folder
 - name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
@@ -20,6 +26,7 @@
 
 ### Simulation.py
 
+- is power density different when it shouldn't be? (when sim space changes but not beam size or power?) 
 - investigate why decay is not being observed even at low loadings when the simulation space is realistic (decay fine when simulation is large)
 - investigate excess sum(q) relative to Q (also consider that the simulation is a slice of only half the beam in transmittance calculation)
 - investigate seeming non-reliance of output from Q value
