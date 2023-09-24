@@ -8,7 +8,8 @@ be sure to use the FLIR ImageJ plugin (separate from anything here) for temperat
 - simulate the CB-PDMS-laser system for modeling to thermal profile and transmittance data
 
 ## using the FLIR side-view image analyzer
-- put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
+
+- (optional: extract timing of images from image metadata): put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
 - run the 
 
 ## using the FLIR top-down image analyzer

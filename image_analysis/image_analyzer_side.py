@@ -17,7 +17,21 @@ def load_data_from_folder(folder_path):
 def extract_temperatures_along_line(data, max_pos, span=15):
     start = max(0, max_pos[1] - span // 2)
     end = min(data.shape[1], max_pos[1] + span // 2 + 1)
-    return data[max_pos[0], start:end]
+    
+    # Extract the temperatures and average with their neighbors in the y dimension
+    averaged_data = []
+    for x in range(start, end):
+        values = []
+        
+        # Get the value of the point and its vertical neighbors
+        for dy in [-1, 0, 1]:
+            y = max_pos[0] + dy
+            if 0 <= y < data.shape[0]:
+                values.append(data[y, x])
+        
+        averaged_data.append(np.mean(values))
+    
+    return np.array(averaged_data)
 
 # Generate a smooth curve using spline interpolation
 def smooth_curve(x, y, points=100):
@@ -53,7 +67,7 @@ def plot_data(data_list, times):
         x_smooth, y_smooth = smooth_curve(range(len(temps)), temps)
         plt.plot(x_smooth, y_smooth, label=f"{label} s", color=color, linewidth=2)
         plt.scatter(range(len(temps)), temps, color=color, marker='o')
-    plt.title("Temperatures along the horizontal lines (Smoothed)")
+    plt.title(f"side-view temperature profile for {os.path.basename(folder_path)}")
     plt.xlabel("Position along the line")
     plt.ylabel("Temperature (°C)")
     plt.legend()
@@ -62,6 +76,6 @@ def plot_data(data_list, times):
     plt.show()
 
 # Run the functions
-folder_path = r'C:\Users\antho\Desktop\Desktop_tmp\FLIR_tmp\1e-4\text'  # Replace with your folder path
+folder_path = r'txt-inputs\side-view\1e-9'  # Replace with your folder path
 data_list, times = load_data_from_folder(folder_path)
 plot_data(data_list, times)

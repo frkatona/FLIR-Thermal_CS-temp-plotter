@@ -37,5 +37,5 @@ def generate_exif_csv_from_images_in_folder(folder_path):
     print(f"CSV saved as {csv_filename}")
 
 # Run the function
-folder_path = r'C:\Users\antho\Desktop\Desktop_tmp\FLIR_tmp\0cb\take3'  # Replace with your folder path
+folder_path = r"C:\Users\antho\Downloads\FLIR_tmp-20230922T215314Z-001\FLIR_tmp\1e-4"  # Replace with your folder path
 generate_exif_csv_from_images_in_folder(folder_path)
