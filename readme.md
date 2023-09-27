@@ -1,4 +1,8 @@
-# FLIR thermal image-to-temperature-crosssection converter/plotter
+# FLIR thermal imaging workup and simulation
+
+
+
+## using the FLIR image analyzer scripts for temperature profile analysis
 
 be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion!
 
@@ -7,16 +11,18 @@ be sure to use the FLIR ImageJ plugin (separate from anything here) for temperat
 - reconstruct thermal images and thermal profile workups
 - simulate the CB-PDMS-laser system for modeling to thermal profile and transmittance data
 
-## using the FLIR side-view image analyzer
+### side-view script
 
-- (optional: extract timing of images from image metadata): put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
-- run the 
+- (optional: extract timing of images from image metadata)
+- put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
 
-## using the FLIR top-down image analyzer
+### top-down script
 
 - put all images in a folder
 - name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
 - change the file_path variable in the appropriate image_analyzer script and run it
+
+## simulation
 
 ## to-do
 
@@ -353,6 +359,8 @@ $$
 [CONSIDER if y integrations should be from y->(y+dy) or (y-1/2 dy)->(y+1/2 dy)]
 
 [CONSIDER if T^4 radiative transfer is non-negligible for the predicted temperatures (look into the Stefan-Boltzmann and emissivity values for PDMS)]
+
+[CONSIDER how passive convection changes at different angles and how mitigated the observed temperatures will be by surface observations -- can I just plant several thermocouples through the material?  how small of an observer effect can I get them to contribute from thermal mass?]
 
 ### Extending to 3D with Cylindrical Symmetry (ignore for now)
 The cylindrical power source of the laser beam will require some 3D considerations at least insofar as the proper distribution of the laser power as a heat source is concerned, as well as any 3D visualization of the temperature distribution.  The heat equation in cylindrical coordinates is given by:
