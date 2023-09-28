@@ -14,26 +14,26 @@ import time
 #     P_area = power_integral * Q_dx
 #     return P_area
 
-def Compute_Power_Source_Distribution(X, abs_coeff, beam_radius_m, dx, height, Q):
+def Compute_Power_Source_Distribution(X, k, r, dx, height, Q):
     """
     Returns the power distribution 2D array within material
     considering Beer's law decay and laser position.
     """
-    Nbeam = height/beam_radius_m
-    beamArray = np.linspace(0,beam_radius_m, Nbeam)
+    Nbeam = height/r
+    beamArray = np.linspace(0,r, Nbeam)
 
-    q = (X <= beam_radius_m).astype(float) # 1 where beam is, 0 where it isn't
+    q = (X <= r).astype(float) # 1 where beam is, 0 where it isn't
 
     # Create a linear space for the depth
     depth = np.linspace(0, height, Nx)
     
     # Apply Beer's law
-    intensity = np.exp(-abs_coeff * height)
+    intensity = np.exp(-k * height)
     
     # Create a 2D array
     array_2d = np.tile(intensity, (Nx, 1)).T
     
-    A = abs_coeff * depth 
+    A = k * depth 
     transmittance = np.exp(-A)
     fraction_absorbed = 1 - transmittance
 
