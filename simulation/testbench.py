@@ -1,45 +1,47 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def apply_decay(y_dim, num_elements, k):
-    # Create a linear space for the depth
-    depth = np.linspace(0, y_dim, num_elements)
-    
-    # Apply Beer's law
-    intensity = np.exp(-k * depth)
-    
-    # Create a 2D array
-    array_2d = np.tile(intensity, (num_elements, 1)).T
-    
-    A = k * y_dim
-    transmittance = np.exp(-A)
+def MakeLaserArray(depth_array, Nx, beam_radius, k):    
+    ## apply Beer's law exp distribution ##
+    intensity = np.exp(-k * depth_array)
+
+    ## tile into a 2D array ##
+    array_2d = np.tile(intensity, (Nx, 1)).T
+
+    ## calculate transmittance ##
+    transmittance = intensity[-1]
     fraction_absorbed = 1 - transmittance
 
-    # Normalize the entire 2D array
+    ## normalize the 2D array ##
     array_2d /= np.sum(array_2d)
     array_2d *= fraction_absorbed
     
     return array_2d, transmittance
 
-def partial_array_fill(y_dim, num_elements, k, full_shape=(500, 500), apply_to_columns=100):
-    # Generate the 2D array with Beer's law applied to the specified number of rows
-    small_array, transmittance = apply_decay(y_dim, num_elements, k)
+def FillArray(height, Nx, k, Nx_beam):
+    # Create a 1D linear space for the depth
+    depth_array = np.linspace(0, height, Nx)
+
+    power_array, transmittance = MakeLaserArray(depth_array, Nx, beam_radius, k)
     
     # Create the full-sized array initialized to zeros
-    large_array = np.zeros(full_shape)
+    full_array = np.zeros(full_shape)
     
     # Copy the values from the small array to the leftmost columns of the large array
-    large_array[:, :apply_to_columns] = small_array[:, :apply_to_columns]
+    full_array[:, :Nx_beam] = power_array[:, :Nx_beam]
     
-    return large_array, transmittance
+    return full_array, transmittance
 
-# Given values
-y_dim = 0.4  # example physical depth
-num_elements = 500  # updated number of elements for the larger array
-k = 200  # example absorption coefficient
+## input parameters ##
+height = 0.4
+beam_radius = 0.04
+Nx = 1000
+Nx_beam = int(Nx * (beam_radius / height))
+full_shape=(Nx, Nx)
+k = 5
 
 # Apply the function to the larger array with only leftmost 100 columns influenced by Beer's law
-resultant_partial_large_array, transmittance = partial_array_fill(y_dim, num_elements, k)
+resultant_partial_large_array, transmittance = FillArray(height, Nx, k, Nx_beam)
 
 # Plot the resultant 2D array of the larger shape
 plt.imshow(resultant_partial_large_array, cmap='hot', vmin=0)
