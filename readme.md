@@ -26,6 +26,11 @@ be sure to use the FLIR ImageJ plugin (separate from anything here) for temperat
 
 ## to-do
 
+### optimization
+- lmfit for the following variables:
+ - diffusivity, absorption coefficient (find each separately then find formula to relate to CB-PDMS loading?)
+ - convection coefficient, 
+
 ### QoL
 
 - find why github isn't loading images or certain equations in readme (e.g., %T)
