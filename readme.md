@@ -149,6 +149,8 @@ Though it is noted that error at the convection boundary is generally inherently
 
 Holman (p. 171) recommends finding this convective temperature first and then calculating the bulk node T values for that time step.
 
+Holman (p. 340) section 7-5 discusses  "free convection from horizontal cylinders," implementing the Grashof (Gr), Nusselt (Nu), and Prandtl (Pr)numbers 
+
 ### Satisfying the CFL Condition
 
 For all such systems, convergence relies on a specific relationship between time and space increments and the velocity magnitude ($\alpha$ in this case), known as the Courant-Friedrichs-Lewy (CFL) condition.  For conductive 2D cases, the following relationship determines compliance with the CFL condition:
@@ -272,7 +274,7 @@ $$
 y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 $$
 
-Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
+Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, e.g., $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
 ## pseudo-code
 

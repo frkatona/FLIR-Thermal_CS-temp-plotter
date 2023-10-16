@@ -4,66 +4,65 @@ from scipy.integrate import quad
 import time
 from numba import jit
 
-def MakeLaserArrayGreatAgain(height, Nx, a, Q):
+def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam):
+    '''power source array generator v2'''
+
+    dx = height / (Nx - 1)
     depth_array = np.linspace(0, height, Nx)
-    Abs_array = np.exp(-a * depth_array)
-    P_array = []
-    for i in range(0,len(Abs_array)-1):
-        P_array.append(Abs_array[i] - Abs_array[i+1])
-    P_array.append(P_array[-1])
-
-    # graph Abs_array
-    plt.plot(depth_array, Abs_array)
-    plt.xlabel('depth (m)')
-    plt.ylabel('absorption')
-    plt.title('Absorption vs. Depth')
-
-    # graph P array
-    plt.plot(depth_array, P_array)
-    plt.xlabel('depth (m)')
-    plt.ylabel('power density (W/m^2)')
-    plt.title('Power Density vs. Depth')
-    plt.show()
-    # incorporate Q
-    # graph Q array
-
-MakeLaserArrayGreatAgain(1, 50, 1, 100)
-
-def MakeLaserArray(height, Nx, a, Q):
-    '''create the 2D array of power source nodes with Beer's law decay''' 
-    # what I want at each point is what is lost in absorption at each step, i.e., P(d) = A(d+1) - A(d)
-
-
-    ## create a 1D linear space for the depth ##
-    depth_array = np.linspace(0, height, Nx)
-
-    ## apply Beer's law exp distribution to 1D array ##
-    intensity = np.exp(-a * depth_array)
-    print(f"max intensity: {intensity[0]}")
-
-    ## tile into a 2D array for all beam nodes ##
-    beam_array = np.tile(intensity, (Nx_beam, 1)).T
-
-    ## calculate transmittance ##
-    transmittance = intensity[-1]
-    fraction_absorbed = 1 - transmittance
-    print(f"fraction absorbed: {fraction_absorbed}")
-    array_power_total = Q / (np.pi * r_beam**2)
-    print(f"array power total: {array_power_total}")
-
-    ## normalize the 2D array to beam power ##
-    beam_array /= np.sum(beam_array)
-    print(f"beam array sum: {beam_array.sum()}")
-    print(f"beam array max: {beam_array.max()}")
-
-    ## scale the normalized array to the extent not transmitted ##
-    beam_array *= fraction_absorbed
-
-    ## scale the normalized array to the power expected in this slice ##
-    beam_array *= array_power_total
-    print(f"beam array sum: {beam_array.sum()}")
+    Abs_array_norm = np.exp(-atten * depth_array)
+    P_array_norm = np.array([])
     
-    return beam_array, transmittance
+    for i in range(0,len(Abs_array_norm)-1):
+        # append the difference between the current and next value to
+        P_array_norm = np.append(P_array_norm, Abs_array_norm[i] - Abs_array_norm[i+1])
+
+    P_array_norm = np.append(P_array_norm, P_array_norm[-1])
+
+    # distribute 1D P_array_norm into 2D with tiling and dividing by beam nodes
+    P_array_norm = np.tile(P_array_norm, (Nx_beam, 1)).T
+    P_array_norm /= Nx_beam
+    
+    # normalize P_array_norm to 1 as a sum of all elements
+    P_array_norm /= P_array_norm.sum()
+
+    # incorporate Q
+
+     # find transmittance
+    T = np.exp(-atten * height)
+
+     # use T to find the fraction of Q absorbed by the cylinder (i.e., total Q not transmitted)
+    Q_abs = (1-T) * Q
+
+     # use the Q in that 3D space to find the volumetric P (i.e., P_vol = Q_abs / volume_cylinder)
+    V_cylinder = np.pi * r_beam**2 * height
+    P_cylinder = Q_abs / V_cylinder
+
+     # use P_vol to get the power contained in the simulation space parallel to the beam path (i.e., P_slice = P_vol / circular_crossSection))
+    V_slice = height * r_beam * dx
+    P_slice = P_cylinder * (V_cylinder / V_slice)
+
+    # distribute that power by scaling the normalized Beer's Law decay array
+    P_array = P_array_norm * (P_slice)
+
+
+
+    V_node = dx*dx*dx
+    cm_convert = 1000000
+    print(f"sum of P_array_norm: {P_array.sum()}")
+    print(f"Q: {Q:.2f} W")
+    print(f"Q_abs: {Q_abs:.2f} W")
+    print(f"P_slice: {P_slice:.2f} W")
+    print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
+    print(f"node volume: {V_node / cm_convert:.2e} cm^3")
+    print(f"max intensity: {P_array.max() / cm_convert:.2f} W/cm^3")
+    print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
+    
+    # plot the 2D array
+    plt.imshow(P_array/cm_convert, cmap='hot', vmin=0)
+    plt.colorbar(label='power density (W/cm^3))')
+    plt.show()
+
+    return P_array, T
 
 def FillArray(Nx, beam_array):
     '''fill out the non-power-source nodes with zeros'''
@@ -88,7 +87,6 @@ def Laplacian_2d(T, dx, dy):
     d2Tdx2[:, -1] = d2Tdy2[:, -1] = 0
     
     return d2Tdx2 + d2Tdy2
-
 
 @jit(nopython=True)
 def RK4(T, dt, dx, dy, thermal_diffusivity, q):
@@ -145,13 +143,6 @@ def Preview_Decay(q, Q, height):
 
     plt.figure(figsize=(16, 6))  # Adjusted figure size for side-by-side plots
 
-    # Plot the distribution of q to visualize the power distribution within the material
-    plt.subplot(1, 2, 1)  # 1x2 grid, first plot
-    plt.imshow(q, cmap='hot', vmin=0)
-    plt.colorbar(label='power density (W/m^2))')
-    plt.title(f"Beer's Law Decay for k = {abs_coeff:0.2f} (transmittance {transmittance*100:.1f}%) for height = {height} m")
-    plt.xlabel('simulation nodes')
-
     # plot a function of exponential decay from the Beer-Lambert law
     plt.subplot(1, 2, 2)  # 1x2 grid, second plot
     plt.plot(np.linspace(0, height, 100), Q * np.exp(-abs_coeff * np.linspace(0, height, 100)), label='power density')
@@ -198,7 +189,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 #############################
 
 ## physical constants ##
-height = 1 # height of the simulation space, m
+height = 0.05 # height of the simulation space, m
 T_0 = 20.0  # Temperature at t = 0, °C
 T_air = 20.0  # Temperature of the surrounding air, °C
 h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
@@ -210,7 +201,7 @@ PDMS_density_gpmL = 1.02
 PDMS_heat_capacity_JpgK = 1.67
 PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_density_gpmL * PDMS_heat_capacity_JpgK)
 
-r_beam = 0.1
+r_beam = 0.01
 
 # circular_crossSection = np.pi * r_beam**2
 # Q_2D_top = Q / circular_crossSection # power density at the top of the simulation space, W/m^2
@@ -228,14 +219,14 @@ if dt_CFL_conv < dt:
 x = y = np.linspace(0, height, Nx)
 X, Y = np.meshgrid(x, y)
 
-output_times = [0, 1, 3, 5]
+output_times = [0, 1, 3]
 
 
 #############################
 ###          MAIN         ###
 #############################
 if __name__ == '__main__':
-    q_beam, transmittance = MakeLaserArray(height, Nx, abs_coeff, Q)
+    q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam)
     q = FillArray(Nx, q_beam)
     Preview_Decay(q, Q, height)
     output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air)
