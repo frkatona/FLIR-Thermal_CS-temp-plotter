@@ -127,7 +127,7 @@ $$
 
 ### Convection Boundary
 
-Above relations do not apply at convection boundaries which must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation for a convection boundary is given by Holman (p. 170):
+Above relations do not apply at convection boundaries which must be handled separately.  In the case of a flat wall in 2-D, the finite-difference approximation for a convection boundary (here as the right wall) is given by Holman (p. 170):
 
 $$
 -k\frac{\Delta y}{\Delta x} (T_{m+1} - T_{m}) = h \Delta y (T_{m+1} - T_{\infty})
