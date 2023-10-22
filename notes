@@ -1,2 +1,27 @@
 P slice too high when attenuation is low
 Temp higher at bottom even when convection is high
+
+modifiers to control weird distribution (especially conductivity to keep it low)
+implementing heat capacity to q addition in T update
+flipping the array (or finding where it gets flipped in RK4)
+
+P_slice treated as power vs power density ~line 39 (maybe distribute after P_slice is found)
+implement piece-wise nature of thermal conductivity contribution of cb content
+
+changed heat capacity to be in m^3 instead of cm^3
+
+current troubleshooting:
+ - convection (top adiabaitic)
+ - conductivity modifier outer = 0.001
+- absorption modifier outer = 100
+ - Nx = 20
+ - flipping q before RK4
+
+additional options: 
+
+
+q currently in terms of W
+
+current goal:
+ - make sure q is just W (Holman p. 145)
+ - be sure that the T update uses the volume of space correctly with q
