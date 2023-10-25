@@ -390,3 +390,22 @@ Which is described by the 2D numerical solutions above.
 - [p. 99] Guass-Seidel iterative method convergence
 - [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
 - https://levelup.gitconnected.com/solving-2d-heat-equation-numerically-using-python-3334004aa01a also does a great job explaining
+- describing the finite differences laplacian
+
+The Laplacian of a function f in two dimensions is calculated as the sum of the second partial derivatives with respect to each spatial dimension:
+
+$$
+\nabla^{2} f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2}
+$$
+
+In the finite difference method, these second derivatives are approximated using discrete differences. For a given point (i, j) on a grid, the finite difference approximation of the Laplacian can be expressed as:
+
+$$
+\nabla^2 f_{i,j} \approx \frac{f_{i+1,j} - 2f_{i,j} + f_{i-1,j}}{\Delta x^2} + \frac{f_{i,j+1} - 2f_{i,j} + f_{i,j-1}}{\Delta y^2}
+$$
+
+If the grid spacing delta X and delta y are equal (which is a common case), this can be simplified to:
+
+$$
+\nabla^2 f_{i,j} \approx \frac{f_{i+1,j} + f_{i-1,j} + f_{i,j+1} + f_{i,j-1} - 4f_{i,j}}{\Delta x^2}
+$$

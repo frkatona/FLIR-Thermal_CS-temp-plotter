@@ -1,3 +1,10 @@
+for next time:
+- read through Holman and note where relevant equations are
+ - update powerpoint along the way
+- pass over comprehensively for misunderstandings
+- append/change any equations I misunderstood previously (e.g., convection that incorporates its previous temperature, power erf function, power with density or no?)
+- strip away code until the axes of non-zero graphs make sense again
+
 P slice too high when attenuation is low
 Temp higher at bottom even when convection is high
 
@@ -11,7 +18,7 @@ implement piece-wise nature of thermal conductivity contribution of cb content
 changed heat capacity to be in m^3 instead of cm^3
 
 current troubleshooting:
- - convection (top adiabaitic)
+ - convection (top adiabaitic).  Also, top never gets actually hot so its convection isn't accurate
  - conductivity modifier outer = 0.001
 - absorption modifier outer = 100
  - Nx = 20
@@ -25,3 +32,8 @@ q currently in terms of W
 current goal:
  - make sure q is just W (Holman p. 145)
  - be sure that the T update uses the volume of space correctly with q
+
+
+ Book notes to return to:
+ [p.31] - radial dimensions for cylinder 
+ [p.33] - heat coeff

@@ -95,14 +95,16 @@ def Boundary_Conditions(T, T_new, h_conv, T_air, dt, dx):
     T_new[0 , : ] = T_new[1 , : ] # bottom
     T_new[ : , 0] = T_new[ : , 1] # left
     T_new[ : , -1] = T_new[ : , -2] # right
-    T_new[-1, : ] = T_new[-2, : ] # top
+    # T_new[-1, : ] = T_new[-2, : ] # top
     
     return T_new
 
 @jit(nopython=True)
 def RK4(T, dt, dx, dy, thermal_diffusivity, q):
     """computes T at the next time step with a 4th degree Runge-Kutta"""
-    
+    # apply heat outside of RK4
+    T 
+
     def rate(T_current):
         T_RK = dt * (thermal_diffusivity * Laplacian_2d(T_current, dx, dy) + (q / PDMS_heat_capacity_V_Jpm3K))
         Boundary_Conditions(T_current, T_RK, h_conv, T_air, dt, dy)
