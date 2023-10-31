@@ -389,6 +389,8 @@ Which is described by the 2D numerical solutions above.
 - [p. 95] Large number of nodes unnecessary due to inherently large uncertanties in h
 - [p. 99] Guass-Seidel iterative method convergence
 - [p. 102] Error of the finite-difference approximation to ∂T/∂x is of the orderof (\Delta x/L)^2 where L is some characteristic body dimension (but also floating point errors increase with the number of iterations)
+- [p. 113] use of variable mesh size
+
 - https://levelup.gitconnected.com/solving-2d-heat-equation-numerically-using-python-3334004aa01a also does a great job explaining
 - describing the finite differences laplacian
 
@@ -404,7 +406,7 @@ $$
 \nabla^2 f_{i,j} \approx \frac{f_{i+1,j} - 2f_{i,j} + f_{i-1,j}}{\Delta x^2} + \frac{f_{i,j+1} - 2f_{i,j} + f_{i,j-1}}{\Delta y^2}
 $$
 
-If the grid spacing delta X and delta y are equal (which is a common case), this can be simplified to:
+If the grid spacing delta x and delta y are equal (which is a common case), this can be simplified to:
 
 $$
 \nabla^2 f_{i,j} \approx \frac{f_{i+1,j} + f_{i-1,j} + f_{i,j+1} + f_{i,j-1} - 4f_{i,j}}{\Delta x^2}

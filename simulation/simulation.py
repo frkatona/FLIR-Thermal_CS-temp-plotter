@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 import time
-from numba import jit
+import lmfit
+from lmfit import minimize, Parameters, create_params
 
-def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam):
+def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, cheat_power):
     '''construct array of power density values for an irradiated cross-section'''
 
     ## create normalized array ##
@@ -37,7 +38,7 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam):
     V_slice = height * r_beam * dx
     P_slice = P_density_cylinder * V_slice
      # distribute that power by scaling the normalized Beer's Law decay array
-    P_array = P_array_norm * (P_slice)
+    P_array = P_array_norm * (P_slice) / (dx*dx*dx) * cheat_power
 
     ## troubleshooting ##
     V_node = dx*dx*dx
@@ -63,34 +64,38 @@ def FillArray(Nx, beam_array):
     cm_convert = 1000000
     plt.imshow(full_array/cm_convert, cmap='hot', vmin=0)
     plt.colorbar(label='power density (W/cm^3))')
-    # plt.show()
 
     return full_array
 
-@jit(nopython=True)
 def Laplacian_2d(T, dx, dy):
     """
     Compute the Laplacian of the temperature field T using central differences.
     """
-    d2Tdx2 = (np.concatenate((T[1:], T[:1]), axis=0) - 2 * T + np.concatenate((T[-1:], T[:-1]), axis=0)) / dx**2
-    d2Tdy2 = (np.concatenate((T[:, 1:], T[:, :1]), axis=1) - 2 * T + np.concatenate((T[:, -1:], T[:, :-1]), axis=1)) / dy**2
+    T_up = np.roll(T, shift=-1, axis=0)
+    T_down = np.roll(T, shift=1, axis=0)
+    T_left = np.roll(T, shift=-1, axis=1)
+    T_right = np.roll(T, shift=1, axis=1)
+    
+    d2Tdx2 = (T_up - 2 * T + T_down) / dx**2
+    d2Tdy2 = (T_left - 2 * T + T_right) / dy**2
 
     return d2Tdx2 + d2Tdy2
 
-@jit(nopython=True)
-def Boundary_Conditions(T, T_new, h_conv, T_air, dt, dx):
+def Boundary_Conditions(T_new, h_conv, T_air, dt, dx):
     '''applies boundary conditions where increasing indices are down in y and to the right in x'''
     ## convective top ##
-    # T_new[-1, : ] = (T_new[-1, : ] + (h_conv * dy / PDMS_thermal_conductivity_WpmK) * T_air) / (1 + h_conv * dy / PDMS_thermal_conductivity_WpmK)
-    # T_new[-1, 1:-1] = (PDMS_thermal_  diffusivity_m2ps * dt / (dx**2)) * (
-    #     2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) * T_air +
-    #     2 * T[1, 1:-1] +
-    #     T[0, :-2] +  # point to the left of current
-    #     T[0, 2:] +   # point to the right of current
-    #     T[0, 1:-1] * ((dx**2) / (PDMS_thermal_diffusivity_m2ps * dt) - 2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) - 4)
-    # ) 
-    # #fix to go point by point if need be
-    
+    T_left = np.roll(T_new[-1, :], shift=-1)  # roll to the left
+    T_right = np.roll(T_new[-1, :], shift=1)  # roll to the right
+    T_below = T_new[-2, :]
+
+    T_new[-1, 1:-1] = (
+        (PDMS_thermal_diffusivity_m2ps * dt / (dx**2)) * (
+            (2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) * T_air) +
+            (T_left[1:-1] + T_right[1:-1] + (2 * T_below[1:-1])) +
+            (T_new[-1, 1:-1] * ((dx**2) / (PDMS_thermal_diffusivity_m2ps * dt) - 2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) - 4))
+        )
+    )
+
     ## adiabatic edges ##
     T_new[0 , : ] = T_new[1 , : ] # bottom
     T_new[ : , 0] = T_new[ : , 1] # left
@@ -99,15 +104,15 @@ def Boundary_Conditions(T, T_new, h_conv, T_air, dt, dx):
     
     return T_new
 
-@jit(nopython=True)
 def RK4(T, dt, dx, dy, thermal_diffusivity, q):
     """computes T at the next time step with a 4th degree Runge-Kutta"""
-    # apply heat outside of RK4
-    T 
+    # note to self: apply heat outside of RK4 ?
+    # note to self: is 
 
     def rate(T_current):
         T_RK = dt * (thermal_diffusivity * Laplacian_2d(T_current, dx, dy) + (q / PDMS_heat_capacity_V_Jpm3K))
-        Boundary_Conditions(T_current, T_RK, h_conv, T_air, dt, dy)
+        T_RK = Boundary_Conditions(T_RK, h_conv, T_air, dt, dy) # accidentally using last T in this function...consolidate these
+
         return T_RK
 
     k1 = rate(T)
@@ -182,51 +187,50 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     fig.suptitle(f'temperature distribution for Q = {Q} W, loading = {loading:.0e}, and beam radius = {r_beam} m')
     plt.show()
 
-#############################
-###       PARAMETERS      ###
-#############################
+# exp_data = ...
 
-## physical constants ##
-height = 0.05 # height of the simulation space, m
-T_0 = 20.0  # Temperature at t = 0, °C
-T_air = 20.0  # Temperature of the surrounding air, °C
-h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
-Q = 100  # Total heat generation rate, W, (i.e., laser power)
-loading = 1e-4 # mass fraction of CB in PDMS, g/g
-conductivity_modifier_inner = 1
-conductivity_modifier_outer = 0.001
-abs_modifier_inner = 10000
-abs_modifier_outer = 100
-r_beam = 0.01
+# def Residual(params, x, data, uncertainty):
+def main(h_conv=5, conductivity_modifier_inner=1, conductivity_modifier_outer=10, abs_modifier_inner=5e5, abs_modifier_outer=10, cheat_power=10):
+    #############################
+    ###       PARAMETERS      ###
+    #############################
 
-PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
-PDMS_density_gpmL = 1.02
-PDMS_density_gpm3 = PDMS_density_gpmL * 1e6
-PDMS_heat_capacity_m_JpgK = 1.67
-PDMS_heat_capacity_V_Jpm3K = PDMS_heat_capacity_m_JpgK * PDMS_density_gpm3
-PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capacity_V_Jpm3K)
-abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
+    ## physical constants ##
+    height = 0.05 # height of the simulation space, m
+    T_0 = 20.0  # Temperature at t = 0, °C
+    T_air = 20.0  # Temperature of the surrounding air, °C
+    Q = 5  # Total heat generation rate, W, (i.e., laser power)
+    loading = 1e-4 # mass fraction of CB in PDMS, g/g
+    r_beam = 0.01
 
-## simulation parameters ##
-Nx = Ny = 100
-Nx_beam = int(Nx * (r_beam / height))
-dx = dy = height / (Nx - 1)
-M = 4
-dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
-dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
-if dt_CFL_convection < dt:
-    dt = dt_CFL_convection
-x = y = np.linspace(0, height, Nx)
-X, Y = np.meshgrid(x, y)
+    PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
+    PDMS_density_gpmL = 1.02
+    PDMS_density_gpm3 = PDMS_density_gpmL * 1e6
+    PDMS_heat_capacity_m_JpgK = 1.67
+    PDMS_heat_capacity_V_Jpm3K = PDMS_heat_capacity_m_JpgK * PDMS_density_gpm3
+    PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capacity_V_Jpm3K)
+    abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
-output_times = [0, 1, 2]
+    ## simulation parameters ##
+    Nx = Ny = 50
+    Nx_beam = int(Nx * (r_beam / height))
+    dx = dy = height / (Nx - 1)
+    M = 4e1
+    dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
+    dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
+    if dt_CFL_convection < dt:
+        dt = dt_CFL_convection
+    x = y = np.linspace(0, height, Nx)
+    X, Y = np.meshgrid(x, y)
+
+    output_times = [0, 1, 5, 15, 30, 60]
 
 
-#############################
-###          MAIN         ###
-#############################
+    #############################
+    ###          MAIN         ###
+    #############################
 
-if __name__ == '__main__':
+    # if __name__ == '__main__':
     t_0 = time.time()
     q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam)
     q = FillArray(Nx, q_beam)
@@ -236,3 +240,16 @@ if __name__ == '__main__':
     t_elapsed = time.time() - t_0
     print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
     Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
+
+
+main()
+
+# params = create_params(h_conv = 5, conductivity_modifier_inner = 1, conductivity_modifier_outer = 10, abs_modifier_inner = 5e5, abs_modifier_outer = 10, cheat_power = 10)
+# params['h_conv'].min = 1
+# params['h_conv'].max = 50
+# params['conductivity_modifier_inner'].min = 1
+# params['abs_modifier_inner'].min = 1
+
+# out = minimize(Residual, params, args=(x, data, uncertainty))
+
+# lmfit.report_fit(out)

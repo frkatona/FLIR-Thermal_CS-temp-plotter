@@ -112,7 +112,7 @@ times = [int(txt_file.split('.')[0]) for txt_file in txt_files]
 popt, _ = curve_fit(log_func, times, max_values)
 y_pred = log_func(np.array(times), *popt)
 
-## modify CSV export to include threshold distances ##
+## include threshold distances in CSV export ##
 with open(output_csv_path, 'w', newline='') as csvfile:
     csvwriter = csv.writer(csvfile)
     
