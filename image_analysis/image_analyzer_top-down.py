@@ -8,7 +8,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import csv
 
 ## folder paths ##
-folder_path = r'txt-inputs\1e-6_high-P'
+folder_path = r'txt-inputs\lmfit_txts\txts_side\1e-4_5W'
 folder_name = os.path.basename(os.path.normpath(folder_path))
 output_csv_path = f'exports\csv_outputs\{folder_name}_scatterplot_data.csv'
 

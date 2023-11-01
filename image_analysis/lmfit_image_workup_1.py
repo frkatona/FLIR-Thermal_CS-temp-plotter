@@ -41,7 +41,7 @@ def visualize_temperature_images(folder_path):
     plt.show()
 
 # Specify the path to the folder containing the text files
-folder_path = r"C:\Users\antho\OneDrive\Code\FLIR-Thermal_CS-temp-plotter\txt-inputs\lmfit_txts\txts_top\1e-9_70W"
+folder_path = r"txt-inputs\lmfit_txts\txts_side\0cb_70W"
 
 # Run the visualization
 visualize_temperature_images(folder_path)
