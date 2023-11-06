@@ -223,8 +223,8 @@ combine_temperature_profiles(
     side_files, side_profiles,
     top_files, top_profiles,
     condition,
-    cm_per_pixel_side=0.1,
-    cm_per_pixel_top=5 / 30
+    cm_per_pixel_side = 0.1,
+    cm_per_pixel_top = 5 / 30
 )
 
 print("Scatterplots generated and CSV files exported.")
