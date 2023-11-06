@@ -1,3 +1,14 @@
+current step (11/6):
+- get the simulation working with a function wrapper
+- get that wrapper into the lmfit objective function
+- add the optimization call lmfit.minimize and print a report
+- investigate exporting a csv that is constantly updated so the gradient descent can be analyzed/visualized and also in case there's a crash during opimization
+- investigate a way to estimate the time remaining for the optimization
+
+- pull data from sim that matches coordinates from lmfit_consolidated csv files
+- ask GPT how to structure the lmfit function (better to use separate script that calls on it; why I need more arguments in the functions when I wrap it, etc.)
+
+
 for next time:
 - read through Holman and note where relevant equations are
  - update powerpoint along the way
