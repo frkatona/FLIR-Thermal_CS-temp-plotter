@@ -1,3 +1,10 @@
+current step (11/7):
+- get basic lmfit going
+- implement scipy grid interpolation
+- start lmfit with shorter time frame (10s?) for get better initial guesses
+- find better solution for gap in temperatures observed between FLIR views
+- modify T_air to match low temps in images (seems mostly 25 anyway but with a little ~15s?  unclear what's going on )
+
 current step (11/6):
 - get the simulation working with a function wrapper
 - get that wrapper into the lmfit objective function
