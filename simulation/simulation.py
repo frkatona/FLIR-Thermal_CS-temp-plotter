@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 import time
-import lmfit
 from lmfit import minimize, Parameters, create_params
 import pandas as pd
 from scipy.interpolate import griddata
@@ -130,7 +129,6 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
     T = np.full((Nx, Ny), T_0)
     output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
 
-    df_lmfit = pd.DataFrame(columns=['time', 'temp', 'top_row', 'center_column'])
     output_temperatures = []
     side_temperatures = []
     top_temperatures = []
@@ -202,19 +200,14 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     fig.suptitle(f'temperature distribution for Q = {Q} W, loading = {loading:.0e}, and beam radius = {r_beam} m')
     plt.show()
 
-
-exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\0cb_70W_temperature_profile.csv')
-
-# def Residual(params, x, data, uncertainty):
-# def main(h_conv=5, conductivity_modifier_inner=1, conductivity_modifier_outer=10, abs_modifier_inner=5e5, abs_modifier_outer=10, power_offset=10):
-def main():
-    ## optimization variables ##
-    h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
-    conductivity_modifier_inner = 1
-    conductivity_modifier_outer = 1e3
-    abs_modifier_inner = 5000
-    abs_modifier_outer = 1e2
-    power_offset = 10
+def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset):
+    # ## optimization variables ##
+    # h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
+    # conductivity_modifier_inner = 1
+    # conductivity_modifier_outer = 1e3
+    # abs_modifier_inner = 5000
+    # abs_modifier_outer = 1e2
+    # power_offset = 10
 
     #############################
     ###       PARAMETERS      ###
@@ -265,28 +258,80 @@ def main():
     x = y = np.linspace(0, height, Nx)
     X, Y = np.meshgrid(x, y)
 
+    global output_times
     output_times = [5, 15, 20, 30, 60]
 
     #############################
     ###       SIM MAIN        ###
     #############################
 
-    t_0 = time.time()
+    # t_0 = time.time()
     q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
     q = FillArray(Nx, q_beam)
     q = np.flip(q, axis=0) # flip around y to match the T array
-    Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff)
+    # Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff)
     output_temperatures_RK, side_temperatures, top_temperatures  = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air)
-    t_elapsed = time.time() - t_0
-    print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
-    Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
+    # t_elapsed = time.time() - t_0
+    # print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
+    # Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
+    
+    return side_temperatures, top_temperatures
+
+def interpolate_exp_data(exp_data, simulation_positions, time):
+    '''interpolate to for compatibility with simulation array'''
+    interpolated_values = np.interp(
+        simulation_positions, 
+        exp_data[exp_data['Time_s'] == time]['X_cm' or 'Y_cm'], 
+        exp_data[exp_data['Time_s'] == time]['Temperature_C']
+    )
+    return interpolated_values
+
+def objective(params):
+    # extract parameters
+    h_conv = params['h_conv'].value
+    conductivity_modifier_inner = params['conductivity_modifier_inner'].value
+    conductivity_modifier_outer = params['conductivity_modifier_outer'].value
+    abs_modifier_inner = params['abs_modifier_inner'].value
+    abs_modifier_outer = params['abs_modifier_outer'].value
+    power_offset = params['power_offset'].value
+
+    # calculate residuals
+    side_temperatures, top_temperatures = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset)
+    residuals = {}
+    for time in output_times:
+        residuals[time] = {
+            'top': np.subtract(top_temperatures[output_times.index(time)], interpolated_exp_data[time]['top']),
+            'side': np.subtract(side_temperatures[output_times.index(time)], interpolated_exp_data[time]['side'])
+    }
+
+    # Combine and return residuals for both top and side
+    combined_residuals = np.concatenate([residuals[time]['top'] for time in output_times] + 
+                                        [residuals[time]['side'] for time in output_times])
+    
+    return combined_residuals
 
 #############################
 ###       FIT MAIN        ###
 #############################
 
-main()
+global Nx, Ny, output_times
+Nx = Ny = 50
+output_times = [5, 15, 20, 30, 60]
 
-# params = create_params(h_conv = 5, conductivity_modifier_inner = 1, conductivity_modifier_outer = 10, abs_modifier_inner = 5e5, abs_modifier_outer = 10, power_offset = 10)
-# out = minimize(Residual, params, args=(x, data, uncertainty))
-# lmfit.report_fit(out)
+# import experimental data
+exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\0cb_70W_temperature_profile.csv')
+
+simulation_x_positions = np.linspace(0, 5, Nx)  # Assuming your grid spans 5 cm
+simulation_y_positions = np.linspace(0, 5, Ny)
+
+interpolated_exp_data = {}
+for time in output_times:
+    interpolated_exp_data[time] = {
+        'top': interpolate_exp_data(exp_data, simulation_x_positions, time),
+        'side': interpolate_exp_data(exp_data, simulation_y_positions, time)
+    }
+
+params = Parameters()
+params = create_params(h_conv = 5, conductivity_modifier_inner = 1, conductivity_modifier_outer = 10, abs_modifier_inner = 5e5, abs_modifier_outer = 10, power_offset = 10)
+result = minimize(objective, params)
+print(result.fit_report())

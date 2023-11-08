@@ -4,23 +4,12 @@
 
 ## using the FLIR image analyzer scripts for temperature profile analysis
 
-be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion!
+The composite_analysis script found in the image_analysis directory takes the path to side- and top-view images exported from the ImageJ FLIR .txt temperature array plugin and outputs the combined profile as seen in the exports/CSVs/lmfit_consolidated directory
 
-- input FLIR thermal images
-- extract thermal and exif data
-- reconstruct thermal images and thermal profile workups
-- simulate the CB-PDMS-laser system for modeling to thermal profile and transmittance data
+## using lmfit for non-linear least-squares minimization (https://lmfit.github.io/lmfit-py/intro.html)
 
-### side-view script
-
-- (optional: extract timing of images from image metadata)
-- put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
-
-### top-down script
-
-- put all images in a folder
-- name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
-- change the file_path variable in the appropriate image_analyzer script and run it
+- write an "objective function" that takes the values of the fitting variables and calculates a value (or array of values), aka "residuals," to be minimized by the optimization algorithm
+- create a Parameters object with the fitting variables along with their initial guesses and bonds
 
 ## simulation
 
@@ -411,3 +400,24 @@ If the grid spacing delta x and delta y are equal (which is a common case), this
 $$
 \nabla^2 f_{i,j} \approx \frac{f_{i+1,j} + f_{i-1,j} + f_{i,j+1} + f_{i,j-1} - 4f_{i,j}}{\Delta x^2}
 $$
+
+
+## deprecated FLIR analysis notes
+
+be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion!
+
+- input FLIR thermal images
+- extract thermal and exif data
+- reconstruct thermal images and thermal profile workups
+- simulate the CB-PDMS-laser system for modeling to thermal profile and transmittance data
+
+### side-view script
+
+- (optional: extract timing of images from image metadata)
+- put original FLIR images in a folder, named by time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
+
+### top-down script
+
+- put all images in a folder
+- name images the time in seconds since the start of the experiment (e.g., 0.txt, 10.txt, 60.txt, 300.txt)
+- change the file_path variable in the appropriate image_analyzer script and run it
