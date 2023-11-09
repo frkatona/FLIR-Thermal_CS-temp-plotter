@@ -43,14 +43,14 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     ## troubleshooting ##
     V_node = dx*dx*dx
-    print(f"sum of P_array_norm: {P_array.sum()}")
-    print(f"Q: {Q:.2f} W")
-    print(f"Q_abs: {Q_abs:.2f} W")
-    print(f"P_slice: {P_slice:.2f} W")
-    print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
-    print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
-    print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
-    print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
+    # print(f"sum of P_array_norm: {P_array.sum()}")
+    # print(f"Q: {Q:.2f} W")
+    # print(f"Q_abs: {Q_abs:.2f} W")
+    # print(f"P_slice: {P_slice:.2f} W")
+    # print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
+    # print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
+    # print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
+    # print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
     
     return P_array, transmittance
 
@@ -148,7 +148,7 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
             top_temp = T[0, : ]  # Assuming the top view is along the top edge (x-axis)
             top_temperatures.append(top_temp)
             
-            print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
+            # print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
            
     return output_temperatures, side_temperatures, top_temperatures
 
@@ -156,7 +156,7 @@ def Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff):
     '''graph of the power distribution from the laser beam power source decay'''
 
     absorbed_power = np.sum(q)
-    print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
+    # print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
 
     plt.figure(figsize=(16, 6))  # Adjusted figure size for side-by-side plots
 
@@ -250,7 +250,7 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     global Nx_beam
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
-    M = 4e1
+    M = 4e2
     dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
     dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
     if dt_CFL_convection < dt:
@@ -287,6 +287,9 @@ def interpolate_exp_data(exp_data, simulation_positions, time):
     return interpolated_values
 
 def objective(params):
+    global loop_n
+    loop_n += 1
+
     # extract parameters
     h_conv = params['h_conv'].value
     conductivity_modifier_inner = params['conductivity_modifier_inner'].value
@@ -308,6 +311,23 @@ def objective(params):
     combined_residuals = np.concatenate([residuals[time]['top'] for time in output_times] + 
                                         [residuals[time]['side'] for time in output_times])
     
+    flattened_residuals = []
+    for time in output_times:
+        flattened_residuals.extend(residuals[time]['top'])
+        flattened_residuals.extend(residuals[time]['side'])
+
+    # Convert to a numpy array for easy computation
+    flattened_residuals = np.array(flattened_residuals)
+
+    mean_residual = np.mean(flattened_residuals)
+    median_residual = np.median(flattened_residuals)
+    std_residual = np.std(flattened_residuals)
+    min_residual = np.min(flattened_residuals)
+    max_residual = np.max(flattened_residuals)
+
+    print(f"{loop_n}) Residuals - Mean: {mean_residual}, Median: {median_residual}, Std: {std_residual}, Min: {min_residual}, Max: {max_residual}")
+
+
     return combined_residuals
 
 #############################
@@ -330,6 +350,9 @@ for time in output_times:
         'top': interpolate_exp_data(exp_data, simulation_x_positions, time),
         'side': interpolate_exp_data(exp_data, simulation_y_positions, time)
     }
+
+global loop_n
+loop_n = 0
 
 params = Parameters()
 params = create_params(h_conv = 5, conductivity_modifier_inner = 1, conductivity_modifier_outer = 10, abs_modifier_inner = 5e5, abs_modifier_outer = 10, power_offset = 10)
