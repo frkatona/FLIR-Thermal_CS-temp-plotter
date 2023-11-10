@@ -1,10 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import quad
 import time
-from lmfit import minimize, Parameters, create_params
+from lmfit import minimize, Parameters, create_params, fit_report
 import pandas as pd
-from scipy.interpolate import griddata
 
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
@@ -123,34 +121,26 @@ def RK4(T, dt, dx, dy, thermal_diffusivity, q, h_conv):
     
     return T + ((k1 + 2*k2 + 2*k3 + k4) / 6)
 
-def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air):
+def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map):
     '''computes T at each grid point at each time step and returns data for each value in output_time'''
-    # initialize temperature distribution and output structures
     T = np.full((Nx, Ny), T_0)
-    output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
 
     output_temperatures = []
-    side_temperatures = []
-    top_temperatures = []
+    side_temperatures = {}
+    top_temperatures = {}
 
-    # loop across each necessary time step
-    for n in range(max(output_indices) + 1):
+    for n in range(max(time_index_map.values()) + 1):
         T = RK4(T, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv)
-        
-        if n in output_indices:
-            output_temperatures.append(T.copy())
-            
-            # Extract the temperatures at the indices matching the side view
-            side_temp = T[ : , 0]  # Assuming the side view is along the left edge (y-axis)
-            side_temperatures.append(side_temp)
-            
-            # Extract the temperatures at the indices matching the top view
-            top_temp = T[0, : ]  # Assuming the top view is along the top edge (x-axis)
-            top_temperatures.append(top_temp)
-            
-            # print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
-           
+
+        # Check if the current index matches one of the output times
+        for time, index in time_index_map.items():
+            if n == index:
+                side_temperatures[time] = T[:, 0]
+                top_temperatures[time] = T[0, :]
+                break 
+
     return output_temperatures, side_temperatures, top_temperatures
+
 
 def Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff):
     '''graph of the power distribution from the laser beam power source decay'''
@@ -270,12 +260,14 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     q = FillArray(Nx, q_beam)
     q = np.flip(q, axis=0) # flip around y to match the T array
     # Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff)
-    output_temperatures_RK, side_temperatures, top_temperatures  = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air)
     # t_elapsed = time.time() - t_0
     # print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
     # Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
     
-    return side_temperatures, top_temperatures
+    time_index_map = create_time_index_map(output_times, dt)
+    output_temperatures, side_temperatures, top_temperatures = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map)
+
+    return side_temperatures, top_temperatures, time_index_map
 
 def interpolate_exp_data(exp_data, simulation_positions, time):
     '''interpolate to for compatibility with simulation array'''
@@ -290,7 +282,7 @@ def objective(params):
     global loop_n
     loop_n += 1
 
-    # extract parameters
+    # Extract parameters
     h_conv = params['h_conv'].value
     conductivity_modifier_inner = params['conductivity_modifier_inner'].value
     conductivity_modifier_outer = params['conductivity_modifier_outer'].value
@@ -298,37 +290,53 @@ def objective(params):
     abs_modifier_outer = params['abs_modifier_outer'].value
     power_offset = params['power_offset'].value
 
-    # calculate residuals
-    side_temperatures, top_temperatures = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset)
+    print(params)
+
+    # Calculate residuals
+    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset)
+    
     residuals = {}
     for time in output_times:
-        residuals[time] = {
-            'top': np.subtract(top_temperatures[output_times.index(time)], interpolated_exp_data[time]['top']),
-            'side': np.subtract(side_temperatures[output_times.index(time)], interpolated_exp_data[time]['side'])
-    }
+        index = time_index_map.get(time)
+        if index is not None and time in side_temperatures and time in top_temperatures:
+            residuals[time] = {
+                'top': np.subtract(top_temperatures[time], interpolated_exp_data[time]['top']),
+                'side': np.subtract(side_temperatures[time], interpolated_exp_data[time]['side'])
+            }
 
-    # Combine and return residuals for both top and side
-    combined_residuals = np.concatenate([residuals[time]['top'] for time in output_times] + 
-                                        [residuals[time]['side'] for time in output_times])
-    
-    flattened_residuals = []
+
+    combined_residuals = []
     for time in output_times:
-        flattened_residuals.extend(residuals[time]['top'])
-        flattened_residuals.extend(residuals[time]['side'])
+        if time in residuals:
+            combined_residuals.extend(residuals[time]['top'])
+            combined_residuals.extend(residuals[time]['side'])
 
-    # Convert to a numpy array for easy computation
-    flattened_residuals = np.array(flattened_residuals)
+    if not combined_residuals:
+        print("No residuals found for any of the output times.")
+        return np.array([0])  # Return an array with a default value
 
+    # Convert to a numpy array for further processing
+    combined_residuals = np.array(combined_residuals)
+    flattened_residuals = np.array(combined_residuals)
+    if loop_n > 1:
+        lastMean = np.mean(flattened_residuals)
+    else:
+        lastMean = 0
     mean_residual = np.mean(flattened_residuals)
-    median_residual = np.median(flattened_residuals)
     std_residual = np.std(flattened_residuals)
-    min_residual = np.min(flattened_residuals)
-    max_residual = np.max(flattened_residuals)
 
-    print(f"{loop_n}) Residuals - Mean: {mean_residual}, Median: {median_residual}, Std: {std_residual}, Min: {min_residual}, Max: {max_residual}")
-
-
+    print(f"{loop_n}) Residuals - Mean Change: {lastMean/mean_residual:.2e} | Mean: {mean_residual:.2e} | Std: {std_residual:.2e}")
+    
     return combined_residuals
+
+def create_time_index_map(output_times, dt):
+    time_index_map = {}
+    for time in output_times:
+        index = round(time / dt)  # Round to the nearest index
+        time_index_map[time] = index
+    print(f"time index map: {time_index_map}, dt: {dt}")
+    return time_index_map
+
 
 #############################
 ###       FIT MAIN        ###
@@ -355,6 +363,12 @@ global loop_n
 loop_n = 0
 
 params = Parameters()
-params = create_params(h_conv = 5, conductivity_modifier_inner = 1, conductivity_modifier_outer = 10, abs_modifier_inner = 5e5, abs_modifier_outer = 10, power_offset = 10)
+params = create_params(h_conv = {'value':5.056359123527011, 'min':1, 'max':30}, 
+                       conductivity_modifier_inner = {'value':3.6696351173010924, 'min':1, 'max':5}, 
+                       conductivity_modifier_outer = {'value':29.85741246606656, 'min':5, 'max':100}, 
+                       abs_modifier_inner = {'value':4989087.791920855, 'min':5e4, 'max':5e8}, 
+                       abs_modifier_outer = {'value':15.13905673173224, 'min':5, 'max':50}, 
+                       power_offset = {'value':1.001246419933755, 'min':1, 'max':2})
 result = minimize(objective, params)
-print(result.fit_report())
+
+print(fit_report(result))
