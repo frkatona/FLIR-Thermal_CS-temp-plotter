@@ -213,8 +213,8 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
 
     ## physical variables ##
     T_0 = 20.0  # Temperature at t = 0, °C
-    Q = 100  # Total heat generation rate, W, (i.e., laser power)
-    loading = 1e-4 # mass fraction of CB in PDMS, g/g
+    Q = 70  # Total heat generation rate, W, (i.e., laser power)
+    loading = 1e-6 # mass fraction of CB in PDMS, g/g
 
     ## system properties and conversions ##
     global cm_m_convert
@@ -347,7 +347,7 @@ Nx = Ny = 50
 output_times = [5, 15, 20, 30, 60]
 
 # import experimental data
-exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\0cb_70W_temperature_profile.csv')
+exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')
 
 simulation_x_positions = np.linspace(0, 5, Nx)  # Assuming your grid spans 5 cm
 simulation_y_positions = np.linspace(0, 5, Ny)
@@ -363,12 +363,12 @@ global loop_n
 loop_n = 0
 
 params = Parameters()
-params = create_params(h_conv = {'value':5.056359123527011, 'min':1, 'max':30}, 
-                       conductivity_modifier_inner = {'value':3.6696351173010924, 'min':1, 'max':5}, 
-                       conductivity_modifier_outer = {'value':29.85741246606656, 'min':5, 'max':100}, 
-                       abs_modifier_inner = {'value':4989087.791920855, 'min':5e4, 'max':5e8}, 
-                       abs_modifier_outer = {'value':15.13905673173224, 'min':5, 'max':50}, 
-                       power_offset = {'value':1.001246419933755, 'min':1, 'max':2})
+params = create_params(h_conv = {'value':30, 'min':1, 'max':30}, 
+                       conductivity_modifier_inner = {'value':4.3, 'min':1, 'max':5}, 
+                       conductivity_modifier_outer = {'value':27.5, 'min':5, 'max':100}, 
+                       abs_modifier_inner = {'value':4988887, 'min':5e4, 'max':5e8}, 
+                       abs_modifier_outer = {'value':14.3, 'min':5, 'max':50}, 
+                       power_offset = {'value':1.52, 'min':0.5, 'max':2})
 result = minimize(objective, params)
 
 print(fit_report(result))

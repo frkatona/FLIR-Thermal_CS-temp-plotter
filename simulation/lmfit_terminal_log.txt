@@ -335,3 +335,55 @@ time index map: {5: 6219, 15: 18657, 20: 24876, 30: 37314, 60: 74629}, dt: 0.000
 
 next tial with updated parameters based on latest results (but before I realized how to get the report printed or that the last wasn't the best)
 1:49 start
+
+~20-30 min run 
+forgot to use correct power and loading
+110) Residuals - Mean Change: 1.00e+00 | Mean: -7.73e+00 | Std: 4.87e+00
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 107
+    # data points      = 500
+    # variables        = 6
+    chi-square         = 41734.1952
+    reduced chi-square = 84.4821766
+    Akaike info crit   = 2224.23400
+    Bayesian info crit = 2249.52165
+##  Warning: uncertainties could not be estimated:
+[[Variables]]
+    h_conv:                       27.7368970 (init = 30)
+    conductivity_modifier_inner:  4.99280560 (init = 4.3)
+    conductivity_modifier_outer:  43.3022035 (init = 27.5)
+    abs_modifier_inner:           93552091.2 (init = 4988887)
+    abs_modifier_outer:           32.6547158 (init = 14.3)
+    power_offset:                 0.50222733 (init = 1.52)
+
+-----------------------------------------
+
+moved on to real power and loading:
+
+70W, 5e-6
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 106
+    # data points      = 500
+    # variables        = 6
+    chi-square         = 623843.090
+    reduced chi-square = 1262.84026
+  = -1.0000
+    C(abs_modifier_inner, power_offset)                         = -0.9993
+    C(abs_modifier_outer, power_offset)                         = +0.9993
+    C(h_conv, abs_modifier_outer)                               = -0.6991
+    C(h_conv, abs_modifier_inner)                               = +0.6987
+    C(h_conv, power_offset)                               = -0.6864
+    C(conductivity_modifier_inner, conductivity_modifier_outer) = +0.4192
+    C(h_conv, conductivity_modifier_inner)                      = +0.2656
+    C(conductivity_modifier_inner, abs_modifier_outer)          = -0.2535
+    C(conductivity_modifier_inner, abs_modifier_inner)          = +0.2533
+    C(conductivity_modifier_inner, power_offset) 
+    
+    53) Residuals - Mean Change: 1.00e+00 | Mean: -5.03e+00 | Std: 3.52e+01
+Parameters([('h_conv', <Parameter 'h_conv', value=5.0020131327788295, bounds=[1:30]>), ('conductivity_modifier_inner', <Parameter 'conductivity_modifier_inner', value=4.22433559377345, bounds=[1:5]>), ('conductivity_modifier_outer', <Parameter 'conductivity_modifier_outer', value=96.17299997325094, bounds=[5:100]>), ('abs_modifier_inner', <Parameter 'abs_modifier_inner', value=3067172.747262237, bounds=[50000.0:500000000.0]>), ('abs_modifier_outer', <Parameter 'abs_modifier_outer', value=5.4992677099858565, bounds=[5:50]>), ('power_offset', <Parameter 'power_offset', value=1.9999977251329073, bounds=[0.5:2]>)])
+time index map: {5: 21690, 15: 65070, 20: 86760, 30: 130139, 60: 260279}, dt: 0.00023052188817582444
+54) Residuals - Mean Change: 1.00e+00 | Mean: -5.03e+00 | Std: 3.52e+01
+Parameters([('h_conv', <Parameter 'h_conv', value=5.0020131327788295, bounds=[1:30]>), ('conductivity_modifier_inner', <Parameter 'conductivity_modifier_inner', value=4.22433559377345, bounds=[1:5]>), ('conductivity_modifier_outer', <Parameter 'conductivity_modifier_outer', value=96.17043434784176, bounds=[5:100]>), ('abs_modifier_inner', <Parameter 'abs_modifier_inner', value=3002500.417657256, bounds=[50000.0:500000000.0]>), ('abs_modifier_outer', <Parameter 'abs_modifier_outer', value=5.4992677099858565, bounds=[5:50]>), ('power_offset', <Parameter 'power_offset', value=1.9999977251329073, bounds=[0.5:2]>)])
+time index map: {5: 21689, 15: 65068, 20: 86757, 30: 130136, 60: 260272}, dt: 0.00023052803801613332               = -0.2481
