@@ -161,20 +161,21 @@ def combine_temperature_profiles(side_files, side_profiles, top_files, top_profi
                 'Temperature_C': temp
             })
     
-    df = pd.DataFrame(combined_data)
-    df_sorted = df.sort_values('Time_s')
-    base_path = Path("exports/csv_outputs/lmfit_consolidated")
-    filename = base_path / f"{folder_name}_temperature_profile.csv"
-    df_sorted.to_csv(filename, index=False)
-    print(f"Combined CSV exported as {filename}")
+    ## Export to CSV ##
+    # df = pd.DataFrame(combined_data)
+    # df_sorted = df.sort_values('Time_s')
+    # base_path = Path("exports/csv_outputs/lmfit_consolidated")
+    # filename = base_path / f"{folder_name}_temperature_profile.csv"
+    # df_sorted.to_csv(filename, index=False)
+    # print(f"Combined CSV exported as {filename}")
 
 ########################
 ######## MAIN ##########
 ########################
 
 # Paths to the folders containing the text files
-side_path = r"txt-inputs\lmfit_txts\txts_side\1e-9_70W" 
-top_path = r"txt-inputs\lmfit_txts\txts_top\1e-9_70W"
+side_path = r"input_txts\lmfit_txts\txts_side\1e-6_70W"
+top_path = r"input_txts\lmfit_txts\txts_top\1e-6_70W"
 
 # Folder names (assuming they are the same as the sample types)
 side_folder_name = os.path.basename(os.path.normpath(side_path))

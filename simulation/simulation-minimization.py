@@ -4,6 +4,11 @@ import time
 from lmfit import minimize, Parameters, create_params, fit_report
 import pandas as pd
 
+'''
+This script is for running the simulation repeatedly to minimize residuals with experimental data and reading the lmfit report.
+'''
+
+
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
 
@@ -41,14 +46,14 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     ## troubleshooting ##
     V_node = dx*dx*dx
-    # print(f"sum of P_array_norm: {P_array.sum()}")
-    # print(f"Q: {Q:.2f} W")
-    # print(f"Q_abs: {Q_abs:.2f} W")
-    # print(f"P_slice: {P_slice:.2f} W")
-    # print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
-    # print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
-    # print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
-    # print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
+    print(f"sum of P_array_norm: {P_array.sum()}")
+    print(f"Q: {Q:.2f} W")
+    print(f"Q_abs: {Q_abs:.2f} W")
+    print(f"P_slice: {P_slice:.2f} W")
+    print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
+    print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
+    print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
+    print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
     
     return P_array, transmittance
 
@@ -146,7 +151,7 @@ def Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff):
     '''graph of the power distribution from the laser beam power source decay'''
 
     absorbed_power = np.sum(q)
-    # print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
+    print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
 
     plt.figure(figsize=(16, 6))  # Adjusted figure size for side-by-side plots
 
@@ -191,13 +196,13 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     plt.show()
 
 def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset):
-    # ## optimization variables ##
-    # h_conv = 5 # Convective heat transfer coefficient, W/(m^2 K)
-    # conductivity_modifier_inner = 1
-    # conductivity_modifier_outer = 1e3
-    # abs_modifier_inner = 5000
-    # abs_modifier_outer = 1e2
-    # power_offset = 10
+    ## optimization variables ##
+    # h_conv = 28 # Convective heat transfer coefficient, W/(m^2 K)
+    # conductivity_modifier_inner = 5
+    # conductivity_modifier_outer = 43
+    # abs_modifier_inner = 1e8
+    # abs_modifier_outer = 33
+    # power_offset = 0.5
 
     #############################
     ###       PARAMETERS      ###
@@ -236,7 +241,7 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
     ## simulation parameters ##
-    Nx = Ny = 50
+    Nx = Ny = 200
     global Nx_beam
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
@@ -262,10 +267,10 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     # Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff)
     # t_elapsed = time.time() - t_0
     # print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
-    # Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
     
     time_index_map = create_time_index_map(output_times, dt)
     output_temperatures, side_temperatures, top_temperatures = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map)
+    Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam, discretize=False)
 
     return side_temperatures, top_temperatures, time_index_map
 
@@ -303,7 +308,6 @@ def objective(params):
                 'top': np.subtract(top_temperatures[time], interpolated_exp_data[time]['top']),
                 'side': np.subtract(side_temperatures[time], interpolated_exp_data[time]['side'])
             }
-
 
     combined_residuals = []
     for time in output_times:
@@ -364,11 +368,11 @@ loop_n = 0
 
 params = Parameters()
 params = create_params(h_conv = {'value':30, 'min':1, 'max':30}, 
-                       conductivity_modifier_inner = {'value':4.3, 'min':1, 'max':5}, 
-                       conductivity_modifier_outer = {'value':27.5, 'min':5, 'max':100}, 
-                       abs_modifier_inner = {'value':4988887, 'min':5e4, 'max':5e8}, 
-                       abs_modifier_outer = {'value':14.3, 'min':5, 'max':50}, 
-                       power_offset = {'value':1.52, 'min':0.5, 'max':2})
+                    conductivity_modifier_inner = {'value':4.3, 'min':1, 'max':5}, 
+                    conductivity_modifier_outer = {'value':27.5, 'min':5, 'max':100}, 
+                    abs_modifier_inner = {'value':4988887, 'min':5e4, 'max':5e8}, 
+                    abs_modifier_outer = {'value':14.3, 'min':5, 'max':50}, 
+                    power_offset = {'value':1.52, 'min':0.5, 'max':2})
 result = minimize(objective, params)
 
 print(fit_report(result))

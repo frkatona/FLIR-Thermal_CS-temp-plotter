@@ -1,11 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import quad
 import time
-import lmfit
-from lmfit import minimize, Parameters, create_params
+from lmfit import minimize, Parameters, create_params, fit_report
 import pandas as pd
-from scipy.interpolate import griddata
 
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
@@ -44,14 +41,14 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     ## troubleshooting ##
     V_node = dx*dx*dx
-    print(f"sum of P_array_norm: {P_array.sum()}")
-    print(f"Q: {Q:.2f} W")
-    print(f"Q_abs: {Q_abs:.2f} W")
-    print(f"P_slice: {P_slice:.2f} W")
-    print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
-    print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
-    print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
-    print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
+    # print(f"sum of P_array_norm: {P_array.sum()}")
+    # print(f"Q: {Q:.2f} W")
+    # print(f"Q_abs: {Q_abs:.2f} W")
+    # print(f"P_slice: {P_slice:.2f} W")
+    # print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
+    # print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
+    # print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
+    # print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
     
     return P_array, transmittance
 
@@ -124,41 +121,32 @@ def RK4(T, dt, dx, dy, thermal_diffusivity, q, h_conv):
     
     return T + ((k1 + 2*k2 + 2*k3 + k4) / 6)
 
-def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air):
+def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map):
     '''computes T at each grid point at each time step and returns data for each value in output_time'''
-    # initialize temperature distribution and output structures
     T = np.full((Nx, Ny), T_0)
-    output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
 
-    df_lmfit = pd.DataFrame(columns=['time', 'temp', 'top_row', 'center_column'])
     output_temperatures = []
-    side_temperatures = []
-    top_temperatures = []
+    side_temperatures = {}
+    top_temperatures = {}
 
-    # loop across each necessary time step
-    for n in range(max(output_indices) + 1):
+    for n in range(max(time_index_map.values()) + 1):
         T = RK4(T, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv)
-        
-        if n in output_indices:
-            output_temperatures.append(T.copy())
-            
-            # Extract the temperatures at the indices matching the side view
-            side_temp = T[ : , 0]  # Assuming the side view is along the left edge (y-axis)
-            side_temperatures.append(side_temp)
-            
-            # Extract the temperatures at the indices matching the top view
-            top_temp = T[0, : ]  # Assuming the top view is along the top edge (x-axis)
-            top_temperatures.append(top_temp)
-            
-            print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
-           
+
+        # Check if the current index matches one of the output times
+        for time, index in time_index_map.items():
+            if n == index:
+                side_temperatures[time] = T[:, 0]
+                top_temperatures[time] = T[0, :]
+                break 
+
     return output_temperatures, side_temperatures, top_temperatures
+
 
 def Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff):
     '''graph of the power distribution from the laser beam power source decay'''
 
     absorbed_power = np.sum(q)
-    print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
+    # print(f'dt: {dt:.2e}s (M={M}), Q: {Q}W, absorbed power: {absorbed_power:.1f}W, transmittance: {transmittance:.1f}%')
 
     plt.figure(figsize=(16, 6))  # Adjusted figure size for side-by-side plots
 
@@ -202,51 +190,175 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     fig.suptitle(f'temperature distribution for Q = {Q} W, loading = {loading:.0e}, and beam radius = {r_beam} m')
     plt.show()
 
-def compute_residuals(sim_temps, exp_data, sim_grid_points, exp_times):
-    residuals = []
-    for t in exp_times:
-        exp_data_t = exp_data[exp_data['Time_s'] == t]
-        exp_temps_interpolated = griddata(
-            (exp_data_t['X_cm'], exp_data_t['Y_cm']), exp_data_t['Temperature_C'],
-            (sim_grid_points['X'], sim_grid_points['Y']), method='cubic'
-        )
+def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset):
+    #############################
+    ###       PARAMETERS      ###
+    #############################
 
-        sim_data_t = sim_temps[t]
-        residuals_t = (sim_data_t - exp_temps_interpolated)**2
-        residuals.append(np.nansum(residuals_t))
+    ## physical constants ##
+    global T_air
+    T_air = 20.0  # Temperature of the surrounding air, °C
+    global height
+    height = 0.05 # height of the simulation space, m
+    global r_beam
+    r_beam = 0.01
 
-    return np.sum(residuals)
+    ## physical variables ##
+    T_0 = 20.0  # Temperature at t = 0, °C
+    Q = 70  # Total heat generation rate, W, (i.e., laser power)
+    loading = 1e-6 # mass fraction of CB in PDMS, g/g
 
-def Residual(params, exp_data, Nx, Ny, T_0, dt, dx, dy, T_air, output_times):
-    # Extract parameters from params
-    # [Your parameter extraction code here]
+    ## system properties and conversions ##
+    global cm_m_convert
+    cm_m_convert = 1e6
+    global mL_m3_convert
+    mL_m3_convert = 1e6
 
-    # Update dependent parameters
-    # [Your parameter update code here]
+    global PDMS_thermal_conductivity_WpmK
+    PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
+    PDMS_density_gpmL = 1.02
+    global PDMS_density_gpm3
+    PDMS_density_gpm3 = PDMS_density_gpmL * mL_m3_convert
+    PDMS_heat_capacity_m_JpgK = 1.67
+    global PDMS_heat_capacity_V_Jpm3K
+    PDMS_heat_capacity_V_Jpm3K = PDMS_heat_capacity_m_JpgK * PDMS_density_gpm3
+    global PDMS_thermal_diffusivity_m2ps
+    PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capacity_V_Jpm3K)
+    global abs_coeff
+    abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
-    # Run the simulation with the updated parameters
-    # [Your simulation code here]
-
-    # Create simulation grid points for interpolation
+    ## simulation parameters ##
+    Nx = Ny = 50
+    global Nx_beam
+    Nx_beam = int(Nx * (r_beam / height))
+    dx = dy = height / (Nx - 1)
+    M = 4e2
+    dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
+    dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
+    if dt_CFL_convection < dt:
+        dt = dt_CFL_convection
     x = y = np.linspace(0, height, Nx)
     X, Y = np.meshgrid(x, y)
-    sim_grid_points = {'X': X, 'Y': Y}
+
+    global output_times
+    output_times = [5, 15, 20, 30, 60]
+
+    #############################
+    ###       SIM MAIN        ###
+    #############################
+
+    # t_0 = time.time()
+    q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
+    q = FillArray(Nx, q_beam)
+    q = np.flip(q, axis=0) # flip around y to match the T array
+    # Preview_Decay(q, Q, height, dt, transmittance, M, abs_coeff)
+    # t_elapsed = time.time() - t_0
+    # print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
+    # Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, discretize=False)
+    
+    time_index_map = create_time_index_map(output_times, dt)
+    output_temperatures, side_temperatures, top_temperatures = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map)
+
+    return side_temperatures, top_temperatures, time_index_map
+
+def interpolate_exp_data(exp_data, simulation_positions, time):
+    '''interpolate to for compatibility with simulation array'''
+    time_data = exp_data[exp_data['Time_s'] == time]
+    interpolated_values = np.interp(
+        simulation_positions, 
+        time_data['X_cm'], 
+        time_data['Temperature_C']
+    )
+    return interpolated_values
+
+def objective(params):
+    global loop_n
+    loop_n += 1
+
+    # Extract parameters
+    h_conv = params['h_conv'].value
+    conductivity_modifier_inner = params['conductivity_modifier_inner'].value
+    conductivity_modifier_outer = params['conductivity_modifier_outer'].value
+    abs_modifier_inner = params['abs_modifier_inner'].value
+    abs_modifier_outer = params['abs_modifier_outer'].value
+    power_offset = params['power_offset'].value
+
+    print(params)
 
     # Calculate residuals
-    return compute_residuals([side_temperatures, top_temperatures], exp_data, sim_grid_points, output_times)
+    _, top_temperatures, time_index_map = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset)
+    
+    residuals = {}
+    for time in output_times:
+        index = time_index_map.get(time)
+        if index is not None and time in top_temperatures:
+            residuals[time] = np.subtract(top_temperatures[time], interpolated_exp_data[time])
 
-def main():
-    # Load experimental data
-    exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\0cb_70W_temperature_profile.csv')
+    combined_residuals = []
+    
+    for time in output_times:
+        if time in residuals:
+            combined_residuals.extend(residuals[time])
+    for time in output_times:
+        if time in residuals:
+            combined_residuals.extend(residuals[time]['top'])
+            combined_residuals.extend(residuals[time]['side'])
 
-    # Define initial parameter values and bounds
-    # [Your parameter definition code here]
+    if not combined_residuals:
+        print("No residuals found for any of the output times.")
+        return np.array([0])  # Return an array with a default value
 
-    # Define other necessary variables for the simulation
-    # [Your simulation variable definition code here]
+    # Convert to a numpy array for further processing
+    combined_residuals = np.array(combined_residuals)
+    flattened_residuals = np.array(combined_residuals)
+    if loop_n > 1:
+        lastMean = np.mean(flattened_residuals)
+    else:
+        lastMean = 0
+    mean_residual = np.mean(flattened_residuals)
+    std_residual = np.std(flattened_residuals)
 
-    # Run optimization
-    result = minimize(Residual, params, args=(exp_data, Nx, Ny, T_0, dt, dx, dy, T_air, output_times))
-    lmfit.report_fit(result)
+    print(f"{loop_n}) Residuals - Mean Change: {lastMean/mean_residual:.2e} | Mean: {mean_residual:.2e} | Std: {std_residual:.2e}")
+    
+    return combined_residuals
 
-main()
+def create_time_index_map(output_times, dt):
+    time_index_map = {}
+    for time in output_times:
+        index = round(time / dt)  # Round to the nearest index
+        time_index_map[time] = index
+    print(f"time index map: {time_index_map}, dt: {dt}")
+    return time_index_map
+
+
+#############################
+###       FIT MAIN        ###
+#############################
+
+global Nx, Ny, output_times
+Nx = Ny = 50
+output_times = [5, 15, 20, 30, 60]
+
+# import experimental data
+exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')
+# Assuming the simulation grid spans from 0 to 5 cm
+simulation_x_positions = np.linspace(0, 5, Nx)  # Nx should match the number of columns in your simulation grid
+
+interpolated_exp_data = {}
+for time in output_times:
+    interpolated_exp_data[time] = interpolate_exp_data(exp_data, simulation_x_positions, time)
+
+
+global loop_n
+loop_n = 0
+
+params = Parameters()
+params = create_params(h_conv = {'value':5, 'min':1, 'max':30}, 
+                       conductivity_modifier_inner = {'value':10, 'min':1, 'max':100}, 
+                       conductivity_modifier_outer = {'value':3, 'min':1, 'max':100}, 
+                       abs_modifier_inner = {'value':1e7, 'min':1e5, 'max':1e9}, 
+                       abs_modifier_outer = {'value':10, 'min':1, 'max':100}, 
+                       power_offset = {'value':1, 'min':0.1, 'max':10})
+result = minimize(objective, params)
+
+print(fit_report(result))

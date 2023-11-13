@@ -15,6 +15,9 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## to-do
 
+- fit terrible--shift to strictly top-down thermal imaging for fitting purposes
+- consider what the FLIR is really reading...should I be averaging the across the depth a bit, like maybe average the first 3 rows or even more but weighted to surface proximity?
+
 ### optimization
 - lmfit for the following variables:
  - diffusivity, absorption coefficient (find each separately then find formula to relate to CB-PDMS loading?)

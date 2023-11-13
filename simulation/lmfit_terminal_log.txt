@@ -381,7 +381,7 @@ moved on to real power and loading:
     C(conductivity_modifier_inner, abs_modifier_inner)          = +0.2533
     C(conductivity_modifier_inner, power_offset) 
     
-    53) Residuals - Mean Change: 1.00e+00 | Mean: -5.03e+00 | Std: 3.52e+01
+53) Residuals - Mean Change: 1.00e+00 | Mean: -5.03e+00 | Std: 3.52e+01
 Parameters([('h_conv', <Parameter 'h_conv', value=5.0020131327788295, bounds=[1:30]>), ('conductivity_modifier_inner', <Parameter 'conductivity_modifier_inner', value=4.22433559377345, bounds=[1:5]>), ('conductivity_modifier_outer', <Parameter 'conductivity_modifier_outer', value=96.17299997325094, bounds=[5:100]>), ('abs_modifier_inner', <Parameter 'abs_modifier_inner', value=3067172.747262237, bounds=[50000.0:500000000.0]>), ('abs_modifier_outer', <Parameter 'abs_modifier_outer', value=5.4992677099858565, bounds=[5:50]>), ('power_offset', <Parameter 'power_offset', value=1.9999977251329073, bounds=[0.5:2]>)])
 time index map: {5: 21690, 15: 65070, 20: 86760, 30: 130139, 60: 260279}, dt: 0.00023052188817582444
 54) Residuals - Mean Change: 1.00e+00 | Mean: -5.03e+00 | Std: 3.52e+01
