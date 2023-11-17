@@ -15,8 +15,16 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## to-do
 
+- fit looks passable for 1e-6 but temps are way too low for 1e-4
+  - see if there are more fundamental problems with the simulation
+  - try to find a compromise with the parameters before retrying lmfit minimization
+- attempt a simplified cure profile from the hot-rod simulation
+
+
 - fit terrible--shift to strictly top-down thermal imaging for fitting purposes
+  [changed to top 5]
 - consider what the FLIR is really reading...should I be averaging the across the depth a bit, like maybe average the first 3 rows or even more but weighted to surface proximity?
+ - [changed to average across top 5 rows for now]
 
 ### optimization
 - lmfit for the following variables:

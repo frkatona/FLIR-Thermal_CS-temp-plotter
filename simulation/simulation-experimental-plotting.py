@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 # Replace with the actual paths to your CSV files
-experimental_path = r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv'
-simulation_path = r'exports\CSVs\simulated_toprow\70W_1e-06_top-row.csv'
+experimental_path = r'exports\CSVs\lmfit_consolidated\1e-4_5W_temperature_profile.csv'
+simulation_path = r'exports\CSVs\simulated_toprow\2W_1e-4_top-row.csv'
 
 # Read the data
 df_experimental = pd.read_csv(experimental_path)
@@ -43,6 +43,6 @@ for i, (time, row) in enumerate(top_data2.iterrows()):
 # Customize the plot
 plt.xlabel('Position (cm)')
 plt.ylabel('Temperature (°C)')
-plt.title('Top Row Temperature Profiles from Two Files (Rainbow Color Map)')
+plt.title(f'Experimental vs. Simulated Temperature Profile for {simulation_path.split("/")[-1]}')
 plt.legend()
 plt.show()

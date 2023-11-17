@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from lmfit import minimize, Parameters, create_params, fit_report
 import pandas as pd
+from scipy.stats import halfnorm
 
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
@@ -13,7 +14,7 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
     abs_array_norm = np.exp(-atten * depth_array)
     P_array_norm = np.array([])
     
-    for i in range(0, (len(abs_array_norm) - 1)):
+    for i in range(len(abs_array_norm) - 1):
         # append the difference between the current and next value to the array
         P_array_norm = np.append(P_array_norm, abs_array_norm[i] - abs_array_norm[i+1])
 
@@ -21,7 +22,22 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     # distribute 1D P_array_norm into 2D with tiling and dividing by beam nodes
     P_array_norm = np.tile(P_array_norm, (Nx_beam, 1)).T
-    
+
+    ### ATTEMPTING HALF-NORMAL DISTRIBUTION ###
+
+    # Generate half-normal coefficients for columns
+    x = np.linspace(0, 1, Nx_beam)
+    half_normal_coeffs = halfnorm.pdf(x, scale=1/3)
+    half_normal_coeffs = half_normal_coeffs / half_normal_coeffs[0]  # Normalize to keep the leftmost value as 1
+
+    # Apply the coefficients to each column and replicate across rows
+    half_normal_array = np.tile(half_normal_coeffs, (Nx, 1))
+
+    # Multiply P_array_norm with the half-normal distribution array
+    P_array_norm *= half_normal_array
+
+    ### /HALF-NORMAL ###
+
     # normalize P_array_norm to 1 as a sum of all elements
     P_array_norm /= P_array_norm.sum()
 
@@ -41,13 +57,14 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     ## troubleshooting ##
     V_node = dx*dx*dx
+    cm_convert = 1000000
     # print(f"sum of P_array_norm: {P_array.sum()}")
     # print(f"Q: {Q:.2f} W")
     # print(f"Q_abs: {Q_abs:.2f} W")
     # print(f"P_slice: {P_slice:.2f} W")
     # print(f"slice % of V_cyl: {V_slice / V_cylinder * 100:.2e} %")
-    # print(f"node volume: {V_node / cm_m_convert:.2e} cm^3")
-    # print(f"max intensity: {P_array.max() / cm_m_convert:.4e} W/cm^3")
+    # print(f"node volume: {V_node / cm_convert:.2e} cm^3")
+    # print(f"max intensity: {P_array.max() / cm_convert:.4e} W/cm^3")
     # print(f"sum of P_array: {P_array.sum() * V_node:.2f} W")
     
     return P_array, transmittance
@@ -60,8 +77,8 @@ def FillArray(Nx, beam_array):
     full_array[:, :Nx_beam] = beam_array[:, :Nx_beam]
     
     ## plot the 2D array ##
-    plt.imshow(full_array/cm_m_convert, cmap='hot', vmin=0)
-    plt.colorbar(label='power density (W/cm^3))')
+    # plt.imshow(full_array/cm_m_convert, cmap='hot', vmin=0)
+    # plt.colorbar(label='power density (W/cm^3))')
 
     return full_array
 
@@ -190,7 +207,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     fig.suptitle(f'temperature distribution for Q = {Q} W, loading = {loading:.0e}, and beam radius = {r_beam} m')
     plt.show()
 
-def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset):
+def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam):
     #############################
     ###       PARAMETERS      ###
     #############################
@@ -200,8 +217,6 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     T_air = 20.0  # Temperature of the surrounding air, °C
     global height
     height = 0.05 # height of the simulation space, m
-    global r_beam
-    r_beam = 0.01
 
     ## physical variables ##
     T_0 = 20.0  # Temperature at t = 0, °C
@@ -263,11 +278,10 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
 
 def interpolate_exp_data(exp_data, simulation_positions, time):
     '''interpolate to for compatibility with simulation array'''
-    time_data = exp_data[exp_data['Time_s'] == time]
     interpolated_values = np.interp(
         simulation_positions, 
-        time_data['X_cm'], 
-        time_data['Temperature_C']
+        exp_data[exp_data['Time_s'] == time]['X_cm' or 'Y_cm'], 
+        exp_data[exp_data['Time_s'] == time]['Temperature_C']
     )
     return interpolated_values
 
@@ -282,54 +296,34 @@ def objective(params):
     abs_modifier_inner = params['abs_modifier_inner'].value
     abs_modifier_outer = params['abs_modifier_outer'].value
     power_offset = params['power_offset'].value
+    r_beam = params['r_beam'].value
 
     print(params)
 
     # Calculate residuals
-    _, top_temperatures, time_index_map = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset)
+    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam)
     
-    residuals = {}
+    residuals = []
     for time in output_times:
         index = time_index_map.get(time)
-        if index is not None and time in top_temperatures:
-            residuals[time] = np.subtract(top_temperatures[time], interpolated_exp_data[time])
+        top_resid = np.subtract(top_temperatures[time], interpolated_exp_data[time]['top'])
+        # 'side': np.subtract(side_temperatures[time], interpolated_exp_data[time]['side'])
 
-    combined_residuals = []
-    
-    for time in output_times:
-        if time in residuals:
-            combined_residuals.extend(residuals[time])
-    for time in output_times:
-        if time in residuals:
-            combined_residuals.extend(residuals[time]['top'])
-            combined_residuals.extend(residuals[time]['side'])
+    residuals.extend(top_resid.ravel())
 
-    if not combined_residuals:
-        print("No residuals found for any of the output times.")
-        return np.array([0])  # Return an array with a default value
 
-    # Convert to a numpy array for further processing
-    combined_residuals = np.array(combined_residuals)
-    flattened_residuals = np.array(combined_residuals)
-    if loop_n > 1:
-        lastMean = np.mean(flattened_residuals)
-    else:
-        lastMean = 0
-    mean_residual = np.mean(flattened_residuals)
-    std_residual = np.std(flattened_residuals)
+    print(f"{loop_n}) Residuals, mean: {np.mean(residuals):.8e}, std: {np.std(residuals):.2e}")
+    print()
 
-    print(f"{loop_n}) Residuals - Mean Change: {lastMean/mean_residual:.2e} | Mean: {mean_residual:.2e} | Std: {std_residual:.2e}")
-    
-    return combined_residuals
+    return residuals
 
 def create_time_index_map(output_times, dt):
     time_index_map = {}
     for time in output_times:
-        index = round(time / dt)  # Round to the nearest index
+        index = round(time / dt)
         time_index_map[time] = index
     print(f"time index map: {time_index_map}, dt: {dt}")
     return time_index_map
-
 
 #############################
 ###       FIT MAIN        ###
@@ -341,24 +335,28 @@ output_times = [5, 15, 20, 30, 60]
 
 # import experimental data
 exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')
-# Assuming the simulation grid spans from 0 to 5 cm
-simulation_x_positions = np.linspace(0, 5, Nx)  # Nx should match the number of columns in your simulation grid
+
+simulation_x_positions = np.linspace(0, 5, Nx)
+simulation_y_positions = np.linspace(0, 5, Ny)
 
 interpolated_exp_data = {}
 for time in output_times:
-    interpolated_exp_data[time] = interpolate_exp_data(exp_data, simulation_x_positions, time)
-
+    interpolated_exp_data[time] = {
+        'top': interpolate_exp_data(exp_data, simulation_x_positions, time),
+        # 'side': interpolate_exp_data(exp_data, simulation_y_positions, time)
+    }
 
 global loop_n
 loop_n = 0
 
 params = Parameters()
-params = create_params(h_conv = {'value':5, 'min':1, 'max':30}, 
-                       conductivity_modifier_inner = {'value':10, 'min':1, 'max':100}, 
-                       conductivity_modifier_outer = {'value':3, 'min':1, 'max':100}, 
+params = create_params(h_conv = {'value':15, 'min':1, 'max':30}, 
+                       conductivity_modifier_inner = {'value':20, 'min':1, 'max':100}, 
+                       conductivity_modifier_outer = {'value':15, 'min':1, 'max':100}, 
                        abs_modifier_inner = {'value':1e7, 'min':1e5, 'max':1e9}, 
-                       abs_modifier_outer = {'value':10, 'min':1, 'max':100}, 
-                       power_offset = {'value':1, 'min':0.1, 'max':10})
+                       abs_modifier_outer = {'value':10, 'min':1, 'max':1e3}, 
+                       power_offset = {'value':1, 'min':0.5, 'max':10},
+                       r_beam = {'value':0.01, 'min':0.005, 'max':0.015})
 result = minimize(objective, params)
 
 print(fit_report(result))

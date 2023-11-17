@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import quad
+from scipy.stats import halfnorm
 import time
 import pandas as pd
 
@@ -17,7 +17,7 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
     abs_array_norm = np.exp(-atten * depth_array)
     P_array_norm = np.array([])
     
-    for i in range(0, (len(abs_array_norm) - 1)):
+    for i in range(len(abs_array_norm) - 1):
         # append the difference between the current and next value to the array
         P_array_norm = np.append(P_array_norm, abs_array_norm[i] - abs_array_norm[i+1])
 
@@ -25,7 +25,22 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
 
     # distribute 1D P_array_norm into 2D with tiling and dividing by beam nodes
     P_array_norm = np.tile(P_array_norm, (Nx_beam, 1)).T
-    
+
+    ### ATTEMPTING HALF-NORMAL DISTRIBUTION ###
+
+    # Generate half-normal coefficients for columns
+    x = np.linspace(0, 1, Nx_beam)
+    half_normal_coeffs = halfnorm.pdf(x, scale=1/3)
+    half_normal_coeffs = half_normal_coeffs / half_normal_coeffs[0]  # Normalize to keep the leftmost value as 1
+
+    # Apply the coefficients to each column and replicate across rows
+    half_normal_array = np.tile(half_normal_coeffs, (Nx, 1))
+
+    # Multiply P_array_norm with the half-normal distribution array
+    P_array_norm *= half_normal_array
+
+    ### /HALF-NORMAL ###
+
     # normalize P_array_norm to 1 as a sum of all elements
     P_array_norm /= P_array_norm.sum()
 
@@ -193,12 +208,12 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
         ax.set_ylabel('y (m)')
         fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=tick_values, fraction = 0.05)
 
-        # Average temperature across the top 5 rows plot
+        # Average temperature across some depth from the top
         ax2 = axes[1, i]
         measure_depth = 0.5
-        average_depth = int(measure_depth / dx) * -1
-        avg_top_5_rows = np.mean(T_out[average_depth:, :], axis=0)
-        ax2.plot(avg_top_5_rows, label='Avg Temp of Top 5 Rows')
+        measure_depth_index = int(measure_depth / dx) * -1
+        avg_depth_temp = np.mean(T_out[measure_depth_index:, :], axis=0)
+        ax2.plot(avg_depth_temp, label=f'avg T across {measure_depth} m (top {measure_depth_index * -1} rows)')
         ax2.set_title(f'Avg Temp of Top 5 Rows at t = {output_times[i]} s')
         ax2.set_xlabel('Distance from Left (cm)')
         ax2.set_ylabel('Average Temperature (°C)')
@@ -206,9 +221,9 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 
         distances = [i * point_spacing for i in range(num_points)]
         if i == 0:
-            avg_temp_data = pd.DataFrame(avg_top_5_rows, index=distances, columns=[f'Time_{output_times[i]}_s'])
+            avg_temp_data = pd.DataFrame(avg_depth_temp, index=distances, columns=[f'Time_{output_times[i]}_s'])
         else:
-            avg_temp_data[f'Time_{output_times[i]}_s'] = avg_top_5_rows
+            avg_temp_data[f'Time_{output_times[i]}_s'] = avg_depth_temp
 
     plt.tight_layout()
     fig.suptitle(f'Temperature Distribution and Average of Top 5 Rows for Q = {Q} W, Loading = {loading:.0e}, and Beam Radius = {r_beam} m')
@@ -223,24 +238,25 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 
 
 def main():
+
     #############################
     ###       PARAMETERS      ###
     #############################
 
-    h_conv = 5
-    conductivity_modifier_inner = 10
-    conductivity_modifier_outer = 3
-    abs_modifier_inner = 1e7
-    abs_modifier_outer = 10
-    power_offset = 1.4
+    h_conv = 5 # 5
+    conductivity_modifier_inner = 20 # 76.0454663
+    conductivity_modifier_outer =  15 # 56.4134507
+    abs_modifier_inner = 1e7 # 60074874.7
+    abs_modifier_outer =  10 # 721.681943
+    power_offset = 50 # 1.4
 
     ## physical constants ##
     height = 0.05 # height of the simulation space, m
     T_0 = 25.0  # Temperature at t = 0, °C
     T_air = 20.0  # Temperature of the surrounding air, °C
-    Q = 70  # Total heat generation rate, W, (i.e., laser power)
-    loading = 1e-6 # mass fraction of CB in PDMS, g/g
-    r_beam = 0.01
+    Q = 5  # Total heat generation rate, W, (i.e., laser power)
+    loading = 1e-4 # mass fraction of CB in PDMS, g/g
+    r_beam = 0.008
 
     PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
     PDMS_density_gpmL = 1.02
@@ -251,7 +267,7 @@ def main():
     abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
     ## simulation parameters ##
-    Nx = Ny = 50
+    Nx = Ny = 150
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
     M = 4e1
@@ -263,7 +279,6 @@ def main():
     X, Y = np.meshgrid(x, y)
 
     output_times = [0, 5, 15, 20, 30, 60]
-
 
     #############################
     ###          MAIN         ###
