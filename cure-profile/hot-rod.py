@@ -15,7 +15,9 @@ array = (array * (np.exp(-np.linspace(0, 20, n)) ** tension) + (np.sin(np.linspa
 # average each point with its neighbors with np.roll and show the graph at each step in the same window
 t = 100
 for i in range(t):
+    # roll laplacian
     array = (array + np.roll(array, 1) + np.roll(array, -1)) / 3
+
     # adiabatic boundaries
     array[0] = (array[0] + array[1]) / 2
     array[-1] = (array[-1] + array[-2]) / 2

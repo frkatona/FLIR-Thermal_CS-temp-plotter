@@ -1,17 +1,31 @@
-# FLIR thermal imaging workup and simulation
+# FLIR thermal imaging, workup, simulation, and minimization for CB-PDMS-laser system
 
+This repository contains scripts for the analysis of thermal images from a FLIR camera, simulation of heat transfer in a CB-PDMS/CW-laser system, and minimization of the simulation to experimental data.
 
+## Workflow Overview
 
-## using the FLIR image analyzer scripts for temperature profile analysis
+- Experimental
+  - collect thermal images using FLIR camera at various lasing times
+- Image Analysis
+  - export thermal .jpg files
+  - reconstruct thermal data with ImageJ plugin
+  - extract thermal profile data along desired spatial orientations
+- Simulation
+  - simulate heat transfer in CB-PDMS/CW-laser system
+  - export simulation data as array(s) with matching shape and spatial/temporal indices as experimental data
+- Fitting
+  - use lmfit to iteratively compare simulation results to experimental data with floating parameters and minimize residuals
+
+## Using the FLIR image analyzer scripts for temperature profile analysis
 
 The composite_analysis script found in the image_analysis directory takes the path to side- and top-view images exported from the ImageJ FLIR .txt temperature array plugin and outputs the combined profile as seen in the exports/CSVs/lmfit_consolidated directory
 
-## using lmfit for non-linear least-squares minimization (https://lmfit.github.io/lmfit-py/intro.html)
+## Using lmfit for non-linear least-squares minimization (https://lmfit.github.io/lmfit-py/intro.html)
 
 - write an "objective function" that takes the values of the fitting variables and calculates a value (or array of values), aka "residuals," to be minimized by the optimization algorithm
 - create a Parameters object with the fitting variables along with their initial guesses and bonds
 
-## simulation
+## Simulation
 
 ## to-do
 
@@ -20,16 +34,16 @@ The composite_analysis script found in the image_analysis directory takes the pa
   - try to find a compromise with the parameters before retrying lmfit minimization
 - attempt a simplified cure profile from the hot-rod simulation
 
-
 - fit terrible--shift to strictly top-down thermal imaging for fitting purposes
   [changed to top 5]
 - consider what the FLIR is really reading...should I be averaging the across the depth a bit, like maybe average the first 3 rows or even more but weighted to surface proximity?
- - [changed to average across top 5 rows for now]
+  - changed to average across top 5 rows for now
 
 ### optimization
+
 - lmfit for the following variables:
- - diffusivity, absorption coefficient (find each separately then find formula to relate to CB-PDMS loading?)
- - convection coefficient, 
+  - diffusivity, absorption coefficient (find each separately then find formula to relate to CB-PDMS loading?)
+  - convection coefficient
 
 ### QoL
 
@@ -47,11 +61,11 @@ The composite_analysis script found in the image_analysis directory takes the pa
 - modify convection to appear before conduction (?)
 - distinguish absorption from extinction (?)
 - model to experimental data
- - t = 60 s
- - 1e-4 (min)
- - 1e-6 (min, max)
- - 1e-7 (min, max)
- - 0 (max)
+  - t = 60 s
+  - 1e-4 (min)
+  - 1e-6 (min, max)
+  - 1e-7 (min, max)
+  - 0 (max)
 - incorporate DSC gelation data
 - visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
 
@@ -276,7 +290,7 @@ $$
 
 Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, e.g., $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
 
-## pseudo-code
+## Simulation Pseudo-code
 
     dx = dy
 
@@ -302,9 +316,7 @@ Being a fourth order method, local truncation error of the RK4 method is on the 
 
     Export_NPZ(T, filepath)
 
-    Plot(T, simulationTimes)
-
-
+    Plot(temps, simulationTimes)
 
 ## implementing DSC data for cure profiles
 
@@ -316,23 +328,27 @@ Elisa Toto, et al. *Polymers*, **2020**, http://dx.doi.org/10.3390/polym12102301
 
 The model will be fit to experimental data for temperatures observed at the surface and bulk at various loadings and powers.
 
-## example thermal images
+## thermal imaging
 
-### thermal profile - laser - 5 s
+thermal profile example 1, laser - 5s:
 
-![thermal profile - laser - 5 s](exports\upgrade-examples\temp-profile_005s.png)
+![thermal profile - laser - 5 s](exports\images\deprecated-examples\bath_examples\temp-profile_005s.png)
 
-### thermal profile - laser - 300 s
+thermal profile example 2, laser - 300s:
 
-![thermal profile - laser - 300 s](exports\upgrade-examples\temp-profile-300s.png)
+![thermal profile - laser - 300 s](exports\images\deprecated-examples\bath_examples\temp-profile-300s.png)
 
-### thermal profile workup - slice
+## modeling
 
-![thermal profile workup - slice](exports\upgrade-examples\slice.png)
+### data from the above thermal images was plotted and the max temperature was fit to a log curve
 
-### thermal profile workup - log
+thermal profile workup - slice:
 
-![thermal profile workup - log](exports\upgrade-examples\log.png)
+![thermal profile workup - slice](exports\images\deprecated-examples\bath_examples\slice.png)
+
+thermal profile workup - log:
+
+![thermal profile workup - log](exports\images\deprecated-examples\bath_examples\log.png)
 
 ## misc
 
@@ -415,7 +431,7 @@ $$
 
 ## deprecated FLIR analysis notes
 
-be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion!
+be sure to use the FLIR ImageJ plugin (separate from anything here) for temperature .txt file conversion: https://peerj.com/articles/cs-977.pdf
 
 - input FLIR thermal images
 - extract thermal and exif data
