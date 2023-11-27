@@ -26,7 +26,7 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
     # distribute 1D P_array_norm into 2D with tiling and dividing by beam nodes
     P_array_norm = np.tile(P_array_norm, (Nx_beam, 1)).T
 
-    ### ATTEMPTING HALF-NORMAL DISTRIBUTION ###
+    ### HALF-NORMAL ###
 
     # Generate half-normal coefficients for columns
     x = np.linspace(0, 1, Nx_beam)
@@ -102,12 +102,13 @@ def Laplacian_2d(T, dx, dy):
 def Boundary_Conditions(T_new, h_conv, T_air, dt, dx, PDMS_thermal_diffusivity_m2ps, PDMS_thermal_conductivity_WpmK):
     '''applies boundary conditions where increasing indices are down in y and to the right in x'''
     ## convective top ##
-    T_left = np.roll(T_new[-1, :], shift=-1)  # roll to the left
-    T_right = np.roll(T_new[-1, :], shift=1)  # roll to the right
+    T_left = np.roll(T_new[-1, :], shift=-1)
+    T_right = np.roll(T_new[-1, :], shift=1)
     T_below = T_new[-2, :]
 
     T_new[-1, 1:-1] = (
-        (PDMS_thermal_diffusivity_m2ps * dt / (dx**2)) * (
+        (PDMS_thermal_diffusivity_m2ps * dt / (dx**2)) * 
+        (
             (2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) * T_air) +
             (T_left[1:-1] + T_right[1:-1] + (2 * T_below[1:-1])) +
             (T_new[-1, 1:-1] * ((dx**2) / (PDMS_thermal_diffusivity_m2ps * dt) - 2 * (h_conv * dx / PDMS_thermal_conductivity_WpmK) - 4))
@@ -124,8 +125,7 @@ def Boundary_Conditions(T_new, h_conv, T_air, dt, dx, PDMS_thermal_diffusivity_m
 
 def RK4(T, dt, dx, dy, thermal_diffusivity, q, PDMS_heat_capacity_V_Jpm3K, h_conv, T_air, PDMS_thermal_diffusivity_m2ps, PDMS_thermal_conductivity_WpmK):
     """computes T at the next time step with a 4th degree Runge-Kutta"""
-    # note to self: apply heat outside of RK4 ?
-    # note to self: is 
+    # note to self: should I try applying heat outside of RK4 ?
 
     def rate(T_current):
         T_RK = dt * (thermal_diffusivity * Laplacian_2d(T_current, dx, dy) + (q / PDMS_heat_capacity_V_Jpm3K))
@@ -142,6 +142,7 @@ def RK4(T, dt, dx, dy, thermal_diffusivity, q, PDMS_heat_capacity_V_Jpm3K, h_con
 
 def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K):
     '''computes T at each grid point at each time step and returns data for each value in output_time'''
+    
     # initialize temperature distribution and output structures
     T = np.full((Nx, Ny), T_0)
     output_indices = [int(t / dt) for t in output_times] # times enumerated as indices based on time step
@@ -186,8 +187,6 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     num_points = output_temperatures[0].shape[1]  # Number of points across the width
     point_spacing = total_width_cm / num_points  # Distance between each point
 
-
-    
     if discretize:
         max_temp = np.max(output_temperatures[-1])
         Tmax = int(np.ceil(max_temp / 20.0) * 20)
@@ -199,6 +198,10 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
         custom_cmap = plt.cm.get_cmap('hot')
         tick_values = None
     
+    FLIR_measure_depth = 0.005 # m
+    measure_depth_index = int(FLIR_measure_depth / dx) * -1
+    print(f'measure_depth_index: {measure_depth_index}')
+
     for i, T_out in enumerate(output_temperatures):
         # Temperature distribution plot
         ax = axes[0, i]  # First row for the temperature distribution plot
@@ -210,12 +213,10 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 
         # Average temperature across some depth from the top
         ax2 = axes[1, i]
-        measure_depth = 0.5
-        measure_depth_index = int(measure_depth / dx) * -1
         avg_depth_temp = np.mean(T_out[measure_depth_index:, :], axis=0)
-        ax2.plot(avg_depth_temp, label=f'avg T across {measure_depth} m (top {measure_depth_index * -1} rows)')
-        ax2.set_title(f'Avg Temp of Top 5 Rows at t = {output_times[i]} s')
-        ax2.set_xlabel('Distance from Left (cm)')
+        ax2.plot(avg_depth_temp, label=f'avg T across {FLIR_measure_depth} m (top {measure_depth_index * -1} rows)')
+        ax2.set_title(f'T_ave across top {FLIR_measure_depth*1000} cm at t = {output_times[i]} s')
+        ax2.set_xlabel('x index')
         ax2.set_ylabel('Average Temperature (°C)')
         ax2.legend()
 
@@ -226,7 +227,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
             avg_temp_data[f'Time_{output_times[i]}_s'] = avg_depth_temp
 
     plt.tight_layout()
-    fig.suptitle(f'Temperature Distribution and Average of Top 5 Rows for Q = {Q} W, Loading = {loading:.0e}, and Beam Radius = {r_beam} m')
+    fig.suptitle(f'Temperature Distribution and Average of Top {FLIR_measure_depth * 100} cm for Q = {Q} W, Loading = {loading:.0e}, and Beam Radius = {r_beam} m')
     plt.show()
 
     # Include the distances as the first column of the DataFrame
@@ -234,8 +235,9 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     avg_temp_data.set_index('Distance_cm', inplace=True)
 
     # Save the DataFrame to a CSV file with distances included
-    avg_temp_data.to_csv(f'exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv')
-
+    export_path = f'exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv'
+    avg_temp_data.to_csv(export_path, mode='w')
+    print(f'Exported data to {export_path}')
 
 def main():
 
@@ -245,18 +247,18 @@ def main():
 
     h_conv = 5 # 5
     conductivity_modifier_inner = 20 # 76.0454663
-    conductivity_modifier_outer =  15 # 56.4134507
+    conductivity_modifier_outer =  10 # 56.4134507
     abs_modifier_inner = 1e7 # 60074874.7
     abs_modifier_outer =  10 # 721.681943
-    power_offset = 50 # 1.4
+    power_offset = 1.3 # 1.4
 
     ## physical constants ##
     height = 0.05 # height of the simulation space, m
     T_0 = 25.0  # Temperature at t = 0, °C
     T_air = 20.0  # Temperature of the surrounding air, °C
-    Q = 5  # Total heat generation rate, W, (i.e., laser power)
-    loading = 1e-4 # mass fraction of CB in PDMS, g/g
-    r_beam = 0.008
+    Q = 70  # Total heat generation rate, W, (i.e., laser power)
+    loading = 1e-6 # mass fraction of CB in PDMS, g/g
+    r_beam = 0.0125
 
     PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
     PDMS_density_gpmL = 1.02
@@ -267,7 +269,7 @@ def main():
     abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
     ## simulation parameters ##
-    Nx = Ny = 150
+    Nx = Ny = 200
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
     M = 4e1
