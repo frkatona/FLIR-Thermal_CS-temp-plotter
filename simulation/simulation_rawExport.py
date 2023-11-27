@@ -269,7 +269,7 @@ def main():
     abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
     ## simulation parameters ##
-    Nx = Ny = 200
+    Nx = Ny = 50
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
     M = 4e1
