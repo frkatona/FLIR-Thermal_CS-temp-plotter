@@ -83,6 +83,8 @@ def FillArray(Nx, beam_array, Nx_beam):
     plt.imshow(full_array/cm_convert, cmap='hot', vmin=0)
     plt.colorbar(label='power density (W/cm^3))')
 
+    full_array = np.flip(full_array, axis=0)
+
     return full_array
 
 def Laplacian_2d(T, dx, dy):
@@ -245,12 +247,12 @@ def main():
     ###       PARAMETERS      ###
     #############################
 
-    h_conv = 5 # 5
-    conductivity_modifier_inner = 20 # 76.0454663
-    conductivity_modifier_outer =  10 # 56.4134507
-    abs_modifier_inner = 1e7 # 60074874.7
-    abs_modifier_outer =  10 # 721.681943
-    power_offset = 1.3 # 1.4
+    h_conv = 5 #9
+    conductivity_modifier_inner = 20 #43
+    conductivity_modifier_outer =  10 #10
+    abs_modifier_inner = 1e7 #2.2e6
+    abs_modifier_outer =  10 #10
+    power_offset = 1.3 #1.84
 
     ## physical constants ##
     height = 0.05 # height of the simulation space, m
@@ -258,7 +260,7 @@ def main():
     T_air = 20.0  # Temperature of the surrounding air, °C
     Q = 70  # Total heat generation rate, W, (i.e., laser power)
     loading = 1e-6 # mass fraction of CB in PDMS, g/g
-    r_beam = 0.0125
+    r_beam = 0.0125 #0.0120
 
     PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
     PDMS_density_gpmL = 1.02
@@ -277,8 +279,6 @@ def main():
     dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
     if dt_CFL_convection < dt:
         dt = dt_CFL_convection
-    x = y = np.linspace(0, height, Nx)
-    X, Y = np.meshgrid(x, y)
 
     output_times = [0, 5, 15, 20, 30, 60]
 
@@ -289,7 +289,6 @@ def main():
     t_0 = time.time()
     q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
     q = FillArray(Nx, q_beam, Nx_beam)
-    q = np.flip(q, axis=0) # flip around y to match the T array
     Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M)
     output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K)
     t_elapsed = time.time() - t_0

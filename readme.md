@@ -29,6 +29,11 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## to-do
 
+12/5
+- 1-by-1 test lmfit
+ - h_conv seems to somewhat improve residuals continuously as it increases even up to 7.4e5... I'll have to think about why that might be but I'll stick with h_conv = 10 because change doesn't seem crazy and also dt becomes very small at high h_conv, not to mention it's unrealistic
+ - 
+
 - fit looks passable for 1e-6 but temps are way too low for 1e-4
   - see if there are more fundamental problems with the simulation
   - try to find a compromise with the parameters before retrying lmfit minimization

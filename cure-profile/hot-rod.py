@@ -12,6 +12,7 @@ array = (array * (np.exp(-np.linspace(0, 20, n)) ** tension) + (np.sin(np.linspa
 
 # Set up the figure and axis
 fig, ax = plt.subplots()
+
 # Set the line color to blue and double the line width
 line, = ax.plot(array, color='blue', linewidth=1.5) 
 ax.set_title('Temperature evolution across a 1D rod')
