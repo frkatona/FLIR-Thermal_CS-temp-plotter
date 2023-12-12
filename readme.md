@@ -343,34 +343,51 @@ thermal profile example 2, laser - 300s:
 
 ![thermal profile - laser - 300 s](exports\images\deprecated-examples\bath_examples\temp-profile-300s.png)
 
-## modeling
-
-### data from the above thermal images was plotted and the max temperature was fit to a log curve
-
-thermal profile workup - slice:
+thermal image temperature profile workup - slice:
 
 ![thermal profile workup - slice](exports\images\deprecated-examples\bath_examples\slice.png)
 
-simulation heat source preview 1D:
+## simulation - 1e-4 cb weight fraction
 
-![modeled data](exports\images\readme_previews\simulation_preview_power-density-decay-1D.png)
+simulation heat source preview (1D and 2D):
 
-simulation heat source preview 2D:
+![1e-4 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-4_1D.png)
 
-![modeled data](exports\images\readme_previews\simulation_preview_power-density-decay-2D.png)
+![1e-4 2D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-4_2D.png)
+
+simulation results for 70W beam at 1e-4 loading:
+
+![simulation for 1e-4 at 70W](exports\images\readme_previews\simulation_1e-4.png)
+
+## simulation - 1e-6 cb weight fraction
+
+simulation heat source preview (1D and 2D):
+
+![1e-6 1D power source distribution preview](exports\images\readme_previews\simulation_preview_power-density-decay-1D.png)
+
+![1e-4 2D power source distribution preview]((exports\images\readme_previews\simulation_preview_power-density-decay-2D.png))
 
 simulation for 70W beam at 1e-6 loading:
 
-![simulation](exports\images\readme_previews\simulation_70W_1e-6.png)
+![simulation for 1e-6 at 70W](exports\images\readme_previews\simulation_70W_1e-6.png)
+
+## simulation - 1e-8 cb weight fraction
+
+simulation heat source preview (1D and 2D):
+
+![1e-8 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-8_1D.png)
+
+![1e-8 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-8_2D.png)
+
+simulation for 70W beam at 1e-6 loading:
+
+![simulation for 1e-8 at 70W](exports\images\readme_previews\simulation_1e-8.png)
+
+## modeling - 1e-6 fit to experimental thermal surface profiles 
 
 thermal profile experimental data fit to simulation:
 
 ![modeled data](exports\images\readme_previews\modeled-data_70W_1e-6.png)
-
-
-
-
-
 
 ## misc
 

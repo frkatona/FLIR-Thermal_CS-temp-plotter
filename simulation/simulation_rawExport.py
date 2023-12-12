@@ -259,7 +259,7 @@ def main():
     T_0 = 25.0  # Temperature at t = 0, °C
     T_air = 20.0  # Temperature of the surrounding air, °C
     Q = 70  # Total heat generation rate, W, (i.e., laser power)
-    loading = 1e-6 # mass fraction of CB in PDMS, g/g
+    loading = 1e-8 # mass fraction of CB in PDMS, g/g
     r_beam = 0.0125 #0.0120
 
     PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
