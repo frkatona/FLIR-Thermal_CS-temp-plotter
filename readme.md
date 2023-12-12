@@ -349,7 +349,7 @@ The model will be fit to experimental data for temperatures observed at the surf
 
 thermal profile example 1, laser - 5s:
 
-![thermal profile - laser - 5 s](/exports\images\deprecated-examples\bath_examples\temp-profile_005s.png)
+![thermal profile - laser - 5 s](/exports/images/deprecated-examples/bath_examples/temp-profile_005s.png)
 
 thermal profile example 2, laser - 300s:
 
@@ -357,62 +357,62 @@ thermal profile example 2, laser - 300s:
 
 thermal image temperature profile workup - slice:
 
-![thermal profile workup - slice](/exports\images\deprecated-examples\bath_examples\slice.png)
+![thermal profile workup - slice](/exports/images/deprecated-examples/bath_examples/slice.png)
 
 ## simulation - 1e-4 cb weight fraction
 
 simulation heat source preview (1D and 2D):
 
-![1e-4 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-4_1D.png)
+![1e-4 1D power source distribution preview](exports/images/readme_previews/simulation_preview_1e-4_1D.png)
 
-![1e-4 2D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-4_2D.png)
+![1e-4 2D power source distribution preview](exports/images/readme_previews/simulation_preview_1e-4_2D.png)
 
 simulation results for 70W beam at 1e-4 loading:
 
-![simulation for 1e-4 at 70W](exports\images\readme_previews\simulation_1e-4.png)
+![simulation for 1e-4 at 70W](exports/images/readme_previews/simulation_1e-4.png)
 
 ## simulation - 1e-6 cb weight fraction
 
 simulation heat source preview (1D and 2D):
 
-![1e-6 1D power source distribution preview](exports\images\readme_previews\simulation_preview_power-density-decay-1D.png)
+![1e-6 1D power source distribution preview](exports/images/readme_previews/simulation_preview_power-density-decay-1D.png)
 
-![1e-4 2D power source distribution preview](exports\images\readme_previews\simulation_preview_power-density-decay-2D.png)
+![1e-4 2D power source distribution preview](exports/images/readme_previews/simulation_preview_power-density-decay-2D.png)
 
 simulation for 70W beam at 1e-6 loading:
 
-![simulation for 1e-6 at 70W](exports\images\readme_previews\simulation_70W_1e-6.png)
+![simulation for 1e-6 at 70W](exports/images/readme_previews/simulation_70W_1e-6.png)
 
 ## simulation - 1e-8 cb weight fraction
 
 simulation heat source preview (1D and 2D):
 
-![1e-8 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-8_1D.png)
+![1e-8 1D power source distribution preview](exports/images/readme_previews/simulation_preview_1e-8_1D.png)
 
-![1e-8 1D power source distribution preview](exports\images\readme_previews\simulation_preview_1e-8_2D.png)
+![1e-8 1D power source distribution preview](exports/images/readme_previews/simulation_preview_1e-8_2D.png)
 
 simulation for 70W beam at 1e-6 loading:
 
-![simulation for 1e-8 at 70W](exports\images\readme_previews\simulation_1e-8.png)
+![simulation for 1e-8 at 70W](exports/images/readme_previews/simulation_1e-8.png)
 
 ## modeling - 1e-6 fit to experimental thermal surface profiles 
 
 thermal profile experimental data fit to simulation:
 
-![modeled data](exports\images\readme_previews\modeled-data_70W_1e-6.png)
+![modeled data](exports/images/readme_previews/modeled-data_70W_1e-6.png)
 
 ## toying around
 
 effect of adiabatic top on simulated 1e-6 thermal profiles:
 
-![adiabatic top effect](exports\images\simulation_1e-6_adiabatic-top.png)
+![adiabatic top effect](exports/images/simulation_1e-6_adiabatic-top.png)
 
 lmfit optimized parameters (one at a time then combined in steps 3 times) for 1e-6 simulation:
 
-![lmfit 1D](exports\images\readme_previews\simulation-preview_1e-6_1-d_lmfit-params.png)
-![lmfit 2D](exports\images\readme_previews\simulation-preview_1e-6_2-d_lmfit-params.png)
-![lmfit sim](exports\images\readme_previews\simulation_1e-6_lmfit-params.png)
-![lmfit fit](exports\images\readme_previews\simulation_fit_lmfit.png)
+![lmfit 1D](exports/images/readme_previews/simulation-preview_1e-6_1-d_lmfit-params.png)
+![lmfit 2D](exports/images/readme_previews/simulation-preview_1e-6_2-d_lmfit-params.png)
+![lmfit sim](exports/images/readme_previews/simulation_1e-6_lmfit-params.png)
+![lmfit fit](exports/images/readme_previews/simulation_fit_lmfit.png)
 ## misc
 
 ### non-discrete heat source equation
