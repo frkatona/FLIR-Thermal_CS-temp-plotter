@@ -329,6 +329,18 @@ Because temperature, time, and cure events are all related to each other and rel
 
 Elisa Toto, et al. *Polymers*, **2020**, http://dx.doi.org/10.3390/polym12102301
 
+Simulating the cure profile of PDMS requires a consideration of the thermoset polymerization process, i.e., the exothermic hydrosilylation reaction.  The degree of curing ($\alpha$) at any point is influenced by temperature and time.
+
+$$ \alpha(t) = \int_0^t k(T(t)) \, dt $$
+
+where:
+- $\alpha(t)$ is the degree of cure at time $t$.
+- $k(T)$ is the rate constant, which depends on temperature and can be expressed using the Arrhenius equation: $k(T) = A \exp\left(-\frac{E_a}{RT}\right)$.
+- $A$ is the pre-exponential factor.
+- $E_a$ is the activation energy.
+- $R$ is the universal gas constant.
+- $T(t)$ is the temperature at a given time $t$.
+
 ## fitting penetration and T profiles to model
 
 The model will be fit to experimental data for temperatures observed at the surface and bulk at various loadings and powers.
@@ -365,7 +377,7 @@ simulation heat source preview (1D and 2D):
 
 ![1e-6 1D power source distribution preview](exports\images\readme_previews\simulation_preview_power-density-decay-1D.png)
 
-![1e-4 2D power source distribution preview]((exports\images\readme_previews\simulation_preview_power-density-decay-2D.png))
+![1e-4 2D power source distribution preview](exports\images\readme_previews\simulation_preview_power-density-decay-2D.png)
 
 simulation for 70W beam at 1e-6 loading:
 
@@ -388,6 +400,18 @@ simulation for 70W beam at 1e-6 loading:
 thermal profile experimental data fit to simulation:
 
 ![modeled data](exports\images\readme_previews\modeled-data_70W_1e-6.png)
+
+## toying around
+
+effect of adiabatic top on simulated 1e-6 thermal profiles:
+
+![adiabatic top effect](exports\images\simulation_1e-6_adiabatic-top.png)
+
+lmfit optimized parameters (one at a time then combined in steps 3 times) for 1e-6 simulation:
+
+![adiabatic top effect](exports\images\readme_previews\simulation-preview_1e-6_1-d_lmfit-params.png)
+![adiabatic top effect](exports\images\readme_previews\simulation-preview_1e-6_2-d_lmfit-params.png)
+![adiabatic top effect](exports\images\readme_previews\simulation_1e-6_lmfit-params.png)
 
 ## misc
 
