@@ -351,9 +351,26 @@ thermal profile workup - slice:
 
 ![thermal profile workup - slice](exports\images\deprecated-examples\bath_examples\slice.png)
 
-thermal profile workup - log:
+simulation heat source preview 1D:
 
-![thermal profile workup - log](exports\images\deprecated-examples\bath_examples\log.png)
+![modeled data](exports\images\readme_previews\simulation_preview_power-density-decay-1D.png)
+
+simulation heat source preview 2D:
+
+![modeled data](exports\images\readme_previews\simulation_preview_power-density-decay-2D.png)
+
+simulation for 70W beam at 1e-6 loading:
+
+![simulation](exports\images\readme_previews\simulation_70W_1e-6.png)
+
+thermal profile experimental data fit to simulation:
+
+![modeled data](exports\images\readme_previews\modeled-data_70W_1e-6.png)
+
+
+
+
+
 
 ## misc
 

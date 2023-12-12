@@ -217,7 +217,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
         ax2 = axes[1, i]
         avg_depth_temp = np.mean(T_out[measure_depth_index:, :], axis=0)
         ax2.plot(avg_depth_temp, label=f'avg T across {FLIR_measure_depth} m (top {measure_depth_index * -1} rows)')
-        ax2.set_title(f'T_ave across top {FLIR_measure_depth*1000} cm at t = {output_times[i]} s')
+        ax2.set_title(f'T_ave across top {FLIR_measure_depth*100} cm at t = {output_times[i]} s')
         ax2.set_xlabel('x index')
         ax2.set_ylabel('Average Temperature (°C)')
         ax2.legend()
