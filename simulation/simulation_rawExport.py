@@ -8,6 +8,8 @@ import pandas as pd
 This script is for just running the simulation and showing the associated graphs and exporting the data to CSVs
 '''
 
+# try lmfit again and save the results and send to Ben
+
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
 

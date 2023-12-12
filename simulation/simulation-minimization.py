@@ -144,20 +144,18 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
 
     return output_temperatures, side_temperatures, top_temperatures
 
-def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam):
+def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air):
 
     #############################
     ###       PARAMETERS      ###
     #############################
 
     ## physical constants ##
-    global T_air
-    T_air = 20.0  # Temperature of the surrounding air, °C
     global height
     height = 0.05 # height of the simulation space, m
 
     ## physical variables ##
-    T_0 = 20.0  # Temperature at t = 0, °C
+    T_0 = T_air  # Temperature at t = 0, °C
     Q = 70  # Total heat generation rate, W, (i.e., laser power)
     loading = 1e-6 # mass fraction of CB in PDMS, g/g
 
@@ -226,11 +224,12 @@ def objective(params):
     abs_modifier_outer = 10 #params['abs_modifier_outer'].value #prev. 10
     power_offset = params['power_offset'].value # REAL1 = 1.77
     r_beam = params['r_beam'].value # REAL1 = 0.0125
+    T_air = params['T_air'].value
 
     print(params)
 
     # Calculate residuals
-    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam)
+    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air)
     
     residuals = {}
     for time in output_times:
@@ -303,13 +302,14 @@ global loop_n
 loop_n = 0
 
 params = Parameters()
-params = create_params(h_conv = {'value':9, 'min':8, 'max':10},
-                    conductivity_modifier_inner = {'value':80, 'min':40, 'max':90}, # best = 80 +/- 3
-                    conductivity_modifier_outer = {'value':20, 'min':15, 'max':25}, # best = 20 +/- 0.7
-                    abs_modifier_inner = {'value':2.2e6, 'min':1e5, 'max':1e7}, 
+params = create_params(h_conv = {'value':5, 'min':1, 'max':50},
+                    conductivity_modifier_inner = {'value':20, 'min':1, 'max':1000}, # best = 80 +/- 3
+                    conductivity_modifier_outer = {'value':10, 'min':1, 'max':100}, # best = 20 +/- 0.7
+                    abs_modifier_inner = {'value':1e7, 'min':1e5, 'max':1e9}, 
                     abs_modifier_outer = {'value':10, 'min':5, 'max':15}, 
-                    power_offset = {'value':1.77, 'min':0.5, 'max':2}, # best = 1.78 +/- 1e7
-                    r_beam = {'value':0.0125, 'min':0.010, 'max':0.015} # best = 0.0125 +/- 1e5
+                    power_offset = {'value':1.3, 'min':0.5, 'max':2}, # best = 1.78 +/- 1e7
+                    r_beam = {'value':0.0125, 'min':0.010, 'max':0.015}, # best = 0.0125 +/- 1e5
+                    T_air = {'value':20, 'min':15, 'max':30}
                     )
 result = minimize(objective, params)
 
