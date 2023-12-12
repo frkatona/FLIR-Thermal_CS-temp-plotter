@@ -349,15 +349,15 @@ The model will be fit to experimental data for temperatures observed at the surf
 
 thermal profile example 1, laser - 5s:
 
-![thermal profile - laser - 5 s](exports\images\deprecated-examples\bath_examples\temp-profile_005s.png)
+![thermal profile - laser - 5 s](/exports\images\deprecated-examples\bath_examples\temp-profile_005s.png)
 
 thermal profile example 2, laser - 300s:
 
-![thermal profile - laser - 300 s](exports\images\deprecated-examples\bath_examples\temp-profile-300s.png)
+![thermal profile - laser - 300 s](/exports/images/deprecated-examples/bath_examples/temp-profile-300s.png)
 
 thermal image temperature profile workup - slice:
 
-![thermal profile workup - slice](exports\images\deprecated-examples\bath_examples\slice.png)
+![thermal profile workup - slice](/exports\images\deprecated-examples\bath_examples\slice.png)
 
 ## simulation - 1e-4 cb weight fraction
 
@@ -409,10 +409,10 @@ effect of adiabatic top on simulated 1e-6 thermal profiles:
 
 lmfit optimized parameters (one at a time then combined in steps 3 times) for 1e-6 simulation:
 
-![adiabatic top effect](exports\images\readme_previews\simulation-preview_1e-6_1-d_lmfit-params.png)
-![adiabatic top effect](exports\images\readme_previews\simulation-preview_1e-6_2-d_lmfit-params.png)
-![adiabatic top effect](exports\images\readme_previews\simulation_1e-6_lmfit-params.png)
-
+![lmfit 1D](exports\images\readme_previews\simulation-preview_1e-6_1-d_lmfit-params.png)
+![lmfit 2D](exports\images\readme_previews\simulation-preview_1e-6_2-d_lmfit-params.png)
+![lmfit sim](exports\images\readme_previews\simulation_1e-6_lmfit-params.png)
+![lmfit fit](exports\images\readme_previews\simulation_fit_lmfit.png)
 ## misc
 
 ### non-discrete heat source equation
