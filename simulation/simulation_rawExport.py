@@ -250,19 +250,19 @@ def main():
     #############################
 
     h_conv = 5 #9
-    conductivity_modifier_inner = 20 #43
-    conductivity_modifier_outer =  10 #10
+    conductivity_modifier_inner = 776 #43
+    conductivity_modifier_outer =  17 #10
     abs_modifier_inner = 1e7 #2.2e6
     abs_modifier_outer =  10 #10
-    power_offset = 1.3 #1.84
+    power_offset = 0.91 #1.84
 
     ## physical constants ##
     height = 0.05 # height of the simulation space, m
     T_0 = 25.0  # Temperature at t = 0, °C
-    T_air = 20.0  # Temperature of the surrounding air, °C
+    T_air = 30  # Temperature of the surrounding air, °C
     Q = 70  # Total heat generation rate, W, (i.e., laser power)
     loading = 1e-6 # mass fraction of CB in PDMS, g/g
-    r_beam = 0.0125 #0.0120
+    r_beam = 0.010 #0.0120
 
     PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
     PDMS_density_gpmL = 1.02

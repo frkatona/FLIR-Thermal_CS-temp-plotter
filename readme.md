@@ -413,6 +413,12 @@ lmfit optimized parameters (one at a time then combined in steps 3 times) for 1e
 ![lmfit 2D](exports/images/readme_previews/simulation-preview_1e-6_2-d_lmfit-params.png)
 ![lmfit sim](exports/images/readme_previews/simulation_1e-6_lmfit-params.png)
 ![lmfit fit](exports/images/readme_previews/simulation_fit_lmfit.png)
+
+Dec 13 lmfit-minimized parameters (starting conditions = by-eye optimized, statistics found at the bottom of notes.md in the root directory): 
+
+![simulation residuals](exports/images/readme_previews/simulation-residuals.png)
+![minimized fit](exports/images/readme_previews/minimized_fit.png)
+
 ## misc
 
 ### non-discrete heat source equation

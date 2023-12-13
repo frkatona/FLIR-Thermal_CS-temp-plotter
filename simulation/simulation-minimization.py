@@ -183,7 +183,7 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     global Nx_beam
     Nx_beam = int(Nx * (r_beam / height))
     dx = dy = height / (Nx - 1)
-    M = 4e1
+    M = 4e2
     dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
     dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
     if dt_CFL_convection < dt:
