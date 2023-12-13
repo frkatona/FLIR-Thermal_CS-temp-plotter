@@ -416,8 +416,8 @@ lmfit optimized parameters (one at a time then combined in steps 3 times) for 1e
 
 Dec 13 lmfit-minimized parameters (starting conditions = by-eye optimized, statistics found at the bottom of notes.md in the root directory): 
 
-![simulation residuals](exports/images/readme_previews/simulation-residuals.png)
-![minimized fit](exports/images/readme_previews/minimized_fit.png)
+![simulation residuals](exports/images/readme_previews/231213_simulation-residuals.png)
+![minimized fit](exports/images/readme_previews/231213_minimized_fit.png)
 
 ## misc
 
