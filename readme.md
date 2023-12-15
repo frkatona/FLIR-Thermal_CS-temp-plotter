@@ -73,27 +73,26 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ### QoL
 
-- find why github isn't loading images or certain equations in readme (e.g., %T)
-- consider optimization package like numba
+- [x] find why github isn't loading images or certain equations in readme (e.g., %T)
+- [x] look into advantages of optimization packages like numba
 
 ### Simulation.py
 
-- is power density different when it shouldn't be? (when sim space changes but not beam size or power?) 
-- investigate why decay is not being observed even at low loadings when the simulation space is realistic (decay fine when simulation is large)
-- investigate excess sum(q) relative to Q (also consider that the simulation is a slice of only half the beam in transmittance calculation)
-- investigate seeming non-reliance of output from Q value
-- finalize exponential decay implementation
-  - monitor for artefacts at boundaries from seeking y values outside of the simulation bounds
-- modify convection to appear before conduction (?)
-- distinguish absorption from extinction (?)
-- model to experimental data
+- [x] is power density different when it shouldn't be? (when sim space changes but not beam size or power?) 
+- [x] investigate why decay is not being observed even at low loadings when the simulation space is realistic (decay fine when simulation is large)
+- [x] investigate seeming non-reliance of output from Q value
+- [x] finalize exponential decay implementation
+  - [x] monitor for artefacts at boundaries from seeking y values outside of the simulation bounds
+- [ ] modify convection to appear before conduction (?)
+- [x] distinguish absorption from extinction (?)
+- [x] model to experimental data
   - t = 60 s
   - 1e-4 (min)
   - 1e-6 (min, max)
   - 1e-7 (min, max)
   - 0 (max)
-- incorporate DSC gelation data
-- visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
+- [ ] incorporate DSC gelation data
+- [ ] visualize circular cross section profiles in XZ as well as 3D temperature distribution animations
 
 ## unsteady-state numerical considerations (*J.P. Holman*, 2010)
 
