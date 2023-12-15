@@ -36,7 +36,7 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
     simulationSteps = max(simulationTimes) / dt
 
-    def UpdateTemperatureArray(RK4, Laplacian, BoundaryConditions):
+    def UpdateTemperatureArray(RK4, Laplacian, BoundaryConditions)
   
     for step in max(simulationSteps):
       T = UpdateTemperatureArray(T_last)
