@@ -247,58 +247,54 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     avg_temp_data.to_csv(export_path, mode='w')
     print(f'Exported data to {export_path}')
 
-def main():
+#############################
+###       PARAMETERS      ###
+#############################
 
-    #############################
-    ###       PARAMETERS      ###
-    #############################
+h_conv = 5 #9
+conductivity_modifier_inner = 20 #43
+conductivity_modifier_outer =  10 #10
+abs_modifier_inner = 1e7 #2.2e6
+abs_modifier_outer =  10 #10
+power_offset = 1.3 #1.84
 
-    h_conv = 5 #9
-    conductivity_modifier_inner = 20 #43
-    conductivity_modifier_outer =  10 #10
-    abs_modifier_inner = 1e7 #2.2e6
-    abs_modifier_outer =  10 #10
-    power_offset = 1.3 #1.84
+## physical constants ##
+height = 0.05 # height of the simulation space, m
+T_0 = 25.0  # Temperature at t = 0, °C
+T_air = 20.0  # Temperature of the surrounding air, °C
+Q = 70  # Total heat generation rate, W, (i.e., laser power)
+loading = 1e-6 # mass fraction of CB in PDMS, g/g
+r_beam = 0.0125 #0.0120
 
-    ## physical constants ##
-    height = 0.05 # height of the simulation space, m
-    T_0 = 25.0  # Temperature at t = 0, °C
-    T_air = 20.0  # Temperature of the surrounding air, °C
-    Q = 70  # Total heat generation rate, W, (i.e., laser power)
-    loading = 1e-6 # mass fraction of CB in PDMS, g/g
-    r_beam = 0.0125 #0.0120
+PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
+PDMS_density_gpmL = 1.02
+PDMS_density_gpm3 = PDMS_density_gpmL * 1e6
+PDMS_heat_capacity_m_JpgK = 1.67
+PDMS_heat_capacity_V_Jpm3K = PDMS_heat_capacity_m_JpgK * PDMS_density_gpm3
+PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capacity_V_Jpm3K)
+abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
-    PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
-    PDMS_density_gpmL = 1.02
-    PDMS_density_gpm3 = PDMS_density_gpmL * 1e6
-    PDMS_heat_capacity_m_JpgK = 1.67
-    PDMS_heat_capacity_V_Jpm3K = PDMS_heat_capacity_m_JpgK * PDMS_density_gpm3
-    PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capacity_V_Jpm3K)
-    abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
+## simulation parameters ##
+Nx = Ny = 50
+Nx_beam = int(Nx * (r_beam / height))
+dx = dy = height / (Nx - 1)
+M = 4e1
+dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
+dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
+if dt_CFL_convection < dt:
+    dt = dt_CFL_convection
 
-    ## simulation parameters ##
-    Nx = Ny = 50
-    Nx_beam = int(Nx * (r_beam / height))
-    dx = dy = height / (Nx - 1)
-    M = 4e1
-    dt = (dx**2 / (PDMS_thermal_diffusivity_m2ps * 4)) / (M/4)  # time step, s; CFL condition for conduction
-    dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx / PDMS_thermal_conductivity_WpmK) + 1)))  # time step, s
-    if dt_CFL_convection < dt:
-        dt = dt_CFL_convection
+output_times = [0, 5, 15, 20, 30, 60]
 
-    output_times = [0, 5, 15, 20, 30, 60]
+#############################
+###          MAIN         ###
+#############################
 
-    #############################
-    ###          MAIN         ###
-    #############################
-
-    t_0 = time.time()
-    q_beam, transmittance = GeneratePowerMask(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
-    q = FillPowerMask(Nx, q_beam, Nx_beam)
-    Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M)
-    output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K)
-    t_elapsed = time.time() - t_0
-    print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
-    Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, dx, Nx, discretize=False)
-
-main()
+t_0 = time.time()
+q_beam, transmittance = GeneratePowerMask(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
+q = FillPowerMask(Nx, q_beam, Nx_beam)
+Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M)
+output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K)
+t_elapsed = time.time() - t_0
+print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
+Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, dx, Nx, discretize=False)
