@@ -3,6 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+"""
+This script is for plotting the finalized, minimized simulation data alongside the experimental data
+"""
+
 # Replace with the actual paths to your CSV files
 experimental_path = r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv'
 simulation_path = r'exports\CSVs\simulated_toprow\70W_1e-06_top-row.csv'

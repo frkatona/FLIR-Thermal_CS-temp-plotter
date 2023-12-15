@@ -9,6 +9,8 @@ import pandas as pd
 This script is for running the simulation repeatedly to minimize residuals with experimental data and reading the lmfit report.
 '''
 
+# instead of holding constant, tell lmfit not to vary parameter
+# interpolate simulation data instead of exp. data
 
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
@@ -265,6 +267,8 @@ def objective(params):
     global global_residuals
     global_residuals.append(combined_residuals)
 
+    # print shape of combined_residuals
+    print(f"shape of combined_residuals: {combined_residuals.shape}")
     return combined_residuals
 
 def create_time_index_map(output_times, dt):
@@ -284,7 +288,7 @@ global_residuals = []
 
 global Nx, Ny, output_times
 Nx = Ny = 50
-output_times = [0, 5, 15, 20, 30, 60]
+output_times = [0, 5]
 
 # import experimental data
 exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')

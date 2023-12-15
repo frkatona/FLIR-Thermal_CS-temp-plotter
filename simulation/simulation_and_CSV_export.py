@@ -5,13 +5,14 @@ import time
 import pandas as pd
 
 '''
-This script is for just running the simulation and showing the associated graphs and exporting the data to CSVs
+This script is for just running the simulation once, showing the associated graphs, and exporting the data to CSVs
 '''
 
-# try lmfit again and save the results and send to Ben
-
-def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
-    '''construct array of power density values for an irradiated cross-section'''
+def GeneratePowerMask(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
+    '''
+    construct array of power density values for the irradiated component of the simulation space
+    (the remaining portion of the simulation space with 0 power density is filled in later)
+    '''
 
     ## create normalized array ##
     dx = height / (Nx - 1)
@@ -74,7 +75,7 @@ def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset
     
     return P_array, transmittance
 
-def FillArray(Nx, beam_array, Nx_beam):
+def FillPowerMask(Nx, beam_array, Nx_beam):
     '''fill out the non-power-source nodes with zeros'''
     full_shape=(Nx, Nx)
     full_array = np.zeros(full_shape)
@@ -104,7 +105,10 @@ def Laplacian_2d(T, dx, dy):
     return d2Tdx2 + d2Tdy2
 
 def Boundary_Conditions(T_new, h_conv, T_air, dt, dx, PDMS_thermal_diffusivity_m2ps, PDMS_thermal_conductivity_WpmK):
-    '''applies boundary conditions where increasing indices are down in y and to the right in x'''
+    '''
+    applies boundary conditions of a convective top and adiabatic edges
+    (increasing indices are down in y and to the right in x)
+    '''
     ## convective top ##
     T_left = np.roll(T_new[-1, :], shift=-1)
     T_right = np.roll(T_new[-1, :], shift=1)
@@ -289,8 +293,8 @@ def main():
     #############################
 
     t_0 = time.time()
-    q_beam, transmittance = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
-    q = FillArray(Nx, q_beam, Nx_beam)
+    q_beam, transmittance = GeneratePowerMask(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
+    q = FillPowerMask(Nx, q_beam, Nx_beam)
     Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M)
     output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K)
     t_elapsed = time.time() - t_0

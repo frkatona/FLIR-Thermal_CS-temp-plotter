@@ -25,25 +25,48 @@ The composite_analysis script found in the image_analysis directory takes the pa
 - write an "objective function" that takes the values of the fitting variables and calculates a value (or array of values), aka "residuals," to be minimized by the optimization algorithm
 - create a Parameters object with the fitting variables along with their initial guesses and bonds
 
-## Simulation
+## Simulation Pseudo-code
+
+
+    temperatureArray = Init_T_Grid(length, height, ambientTemperature)
+
+    powerMask = InitPowerMask(beamRadius, beamPower, attenuationCoefficient)
+
+    dt = CFL(dx, thermalConductivity)
+
+    simulationSteps = max(simulationTimes) / dt
+
+    def RK4:
+      Laplacian(T, powerMask)
+      BoundaryConditions(T, convectionCoefficient)
+
+    for step in max(simulationSteps):
+      T = RK4(T_last, powerMask, dt, dx, thermalConductivity)
+      if step in simulationTimes:
+        temperatureProfiles.append(T)
+      T_last = T
+
+    Export_CSV(temperatureProfiles, filepath)
+
+    Plot(temperatureProfiles)
 
 ## to-do
 
-12/5
-- 1-by-1 test lmfit
- - h_conv seems to somewhat improve residuals continuously as it increases even up to 7.4e5... I'll have to think about why that might be but I'll stick with h_conv = 10 because change doesn't seem crazy and also dt becomes very small at high h_conv, not to mention it's unrealistic
- - 
+- 12/15
+  - [ ] retry 'one at at time' lmfit redo but with the 'held constant' parameters set with the argument from the documentation
+  - [ ] refactor interpolation to experimental data from simulation instead of vice versa
 
-- fit looks passable for 1e-6 but temps are way too low for 1e-4
-  - see if there are more fundamental problems with the simulation
-  - try to find a compromise with the parameters before retrying lmfit minimization
-- attempt a simplified cure profile from the hot-rod simulation
 
-- fit terrible--shift to strictly top-down thermal imaging for fitting purposes
-  [changed to top 5]
-- consider what the FLIR is really reading...should I be averaging the across the depth a bit, like maybe average the first 3 rows or even more but weighted to surface proximity?
-  - changed to average across top 5 rows for now
+- 12/5
+  - [x] 1-by-1 test lmfit
+  - [ ] h_conv seems to somewhat improve residuals continuously as it increases even up to 7.4e5... I'll have to think about why that might be but I'll stick with h_conv = 10 because change doesn't seem crazy and also dt becomes very small at high h_conv, not to mention it's unrealistic
+  - [x] try to find a compromise with the parameters before retrying lmfit minimization
+  - [x] attempt a simplified cure profile from the hot-rod simulation
+  - [x] consider what the FLIR is really reading...should I be averaging the across the depth a bit, like maybe average the first 3 rows or even more but weighted to surface proximity?
+  - note: fit terrible--shift to strictly top-down thermal imaging for fitting purposes
+  - note: fit looks passable for 1e-6 but temps are way too low for 1e-4
 
+  
 ### optimization
 
 - lmfit for the following variables:
@@ -294,34 +317,6 @@ y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 $$
 
 Being a fourth order method, local truncation error of the RK4 method is on the order of $O(h^5)$ and total accumulated error is on the order of $O(h^4)$ (where $h$ is the step size). Further mitigation of error can come from smaller step sizes, but obviously the computational cost is the compromise.  While not implemented here yet, often accompanying RK4 is an additional "adaptive step size" feature which adjusts the step size based on the error of the previous step. The error of the RK4 method is of the order of $\Delta t^5$ and so the error of the solution can be estimated by comparing the solutions of two different step sizes, e.g., $\Delta t$ and $\Delta t / 2$ (V. Sing. *JETIR.* **2018**).
-
-## Simulation Pseudo-code
-
-    dx = dy
-
-    dt = CFL(dx, alpha, h, k)
-
-    T = Init_2D_Array(length, height, dt)
-
-    beam_mask = Beam_Mask(T, beamRadius, beamPower)
-
-    for t in max(simulationTimes):
-
-      for points in X, Y:
-
-        T = RK4(T_last, beam_mask) # RK4 for conduction, heat source, and convection
-
-        T = BoundaryConditions(T)
-
-        T_last = T
-
-      if t in simulationTimes:
-
-        temps.append(T)
-
-    Export_NPZ(T, filepath)
-
-    Plot(temps, simulationTimes)
 
 ## implementing DSC data for cure profiles
 
