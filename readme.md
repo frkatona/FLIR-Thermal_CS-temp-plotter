@@ -36,12 +36,10 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
     simulationSteps = max(simulationTimes) / dt
 
-    def RK4:
-      Laplacian(T, powerMask)
-      BoundaryConditions(T, convectionCoefficient)
-
+    def UpdateTemperatureArray(RK4, Laplacian, BoundaryConditions):
+  
     for step in max(simulationSteps):
-      T = RK4(T_last, powerMask, dt, dx, thermalConductivity)
+      T = UpdateTemperatureArray(T_last)
       if step in simulationTimes:
         temperatureProfiles.append(T)
       T_last = T
