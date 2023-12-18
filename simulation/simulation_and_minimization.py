@@ -306,15 +306,24 @@ global loop_n
 loop_n = 0
 
 params = Parameters()
-params = create_params(h_conv = {'value':5, 'min':1, 'max':50},
-                    conductivity_modifier_inner = {'value':20, 'min':1, 'max':1000}, # best = 80 +/- 3
-                    conductivity_modifier_outer = {'value':10, 'min':1, 'max':100}, # best = 20 +/- 0.7
-                    abs_modifier_inner = {'value':1e7, 'min':1e5, 'max':1e9}, 
-                    abs_modifier_outer = {'value':10, 'min':5, 'max':15}, 
-                    power_offset = {'value':1.3, 'min':0.5, 'max':2}, # best = 1.78 +/- 1e7
-                    r_beam = {'value':0.0125, 'min':0.010, 'max':0.015}, # best = 0.0125 +/- 1e5
-                    T_air = {'value':20, 'min':15, 'max':30}
-                    )
+# params = create_params(h_conv = {'value':5, 'min':1, 'max':50},
+#                     conductivity_modifier_inner = {'value':20, 'min':1, 'max':1000}, # best = 80 +/- 3
+#                     conductivity_modifier_outer = {'value':10, 'min':1, 'max':100}, # best = 20 +/- 0.7
+#                     abs_modifier_inner = {'value':1e7, 'min':1e5, 'max':1e9}, 
+#                     abs_modifier_outer = {'value':10, 'min':5, 'max':15}, 
+#                     power_offset = {'value':1.3, 'min':0.5, 'max':2}, # best = 1.78 +/- 1e7
+#                     r_beam = {'value':0.0125, 'min':0.010, 'max':0.015}, # best = 0.0125 +/- 1e5
+#                     T_air = {'value':20, 'min':15, 'max':30}
+#                     )
+params.add('h_conv', value=10, min=1, max=50, vary=True)
+params.add('conductivity_modifier_inner', value=20, min=1, max=1000, vary=True)
+params.add('conductivity_modifier_outer', value=10, min=1, max=100, vary=True)
+params.add('abs_modifier_inner', value=1e7, min=1e5, max=1e9 vary=False)
+params.add('abs_modifier_outer', value=10, min=5, max=15, vary=False)
+params.add('power_offset', value=1.77, min=0.5, max=2, vary=False)
+params.add('r_beam', value=0.0125, min=0.010, max=0.015, vary=False)
+params.add('T_air', value=20, min=15, max=30, vary=True)
+
 result = minimize(objective, params)
 
 print(fit_report(result))

@@ -50,10 +50,12 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## to-do
 
+- 12/18
+  - [ ] learn the pathlib library including Path() for compatibility with windows/unix filepaths
+
 - 12/15
   - [ ] retry 'one at at time' lmfit redo but with the 'held constant' parameters set with the argument from the documentation
   - [ ] refactor interpolation to experimental data from simulation instead of vice versa
-
 
 - 12/5
   - [x] 1-by-1 test lmfit
