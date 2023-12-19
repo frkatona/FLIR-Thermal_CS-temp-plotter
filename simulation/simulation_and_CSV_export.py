@@ -185,7 +185,7 @@ def Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M):
     plt.tight_layout()  # Adjusts spacing between plots for better layout
     plt.show()
 
-def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam, dx, Nx, discretize=True):  
+def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam, dx, FLIR_measure_depth):  
     '''plots slices of T at each output time and the average temperature of the top 5 rows'''
     
     num_times = len(output_times)
@@ -195,18 +195,9 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     num_points = output_temperatures[0].shape[1]  # Number of points across the width
     point_spacing = total_width_cm / num_points  # Distance between each point
 
-    if discretize:
-        max_temp = np.max(output_temperatures[-1])
-        Tmax = int(np.ceil(max_temp / 20.0) * 20)
-        Tmin = 20
-        ticks = (Tmax - Tmin) // 20 + 1
-        tick_values = np.linspace(Tmin, Tmax, ticks)
-        custom_cmap = plt.cm.get_cmap('hot', ticks-1)
-    else:
-        custom_cmap = plt.cm.get_cmap('hot')
-        tick_values = None
+    custom_cmap = plt.cm.get_cmap('hot')
+    tick_values = None
     
-    FLIR_measure_depth = 0.005 # m
     measure_depth_index = int(FLIR_measure_depth / dx) * -1
     print(f'measure_depth_index: {measure_depth_index}')
 
@@ -265,6 +256,7 @@ T_air = 20.0  # Temperature of the surrounding air, °C
 Q = 70  # Total heat generation rate, W, (i.e., laser power)
 loading = 1e-6 # mass fraction of CB in PDMS, g/g
 r_beam = 0.0125 #0.0120
+FLIR_measure_depth = 0.05
 
 PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
 PDMS_density_gpmL = 1.02
@@ -297,4 +289,4 @@ Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M)
 output_temperatures_RK = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, PDMS_thermal_conductivity_WpmK, PDMS_heat_capacity_V_Jpm3K)
 t_elapsed = time.time() - t_0
 print(f'elapsed time: {t_elapsed:.2f} s for {len(output_times)} time steps with {Nx}x{Ny} nodes ({t_elapsed / output_times[-1]:.2f} s_irl/s_sim)')
-Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, dx, Nx, discretize=False)
+Plot_T_Slices(output_temperatures_RK, output_times, height, Q, loading, r_beam, dx, FLIR_measure_depth)

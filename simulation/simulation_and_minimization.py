@@ -9,8 +9,8 @@ import pandas as pd
 This script is for running the simulation repeatedly to minimize residuals with experimental data and reading the lmfit report.
 '''
 
-# instead of holding constant, tell lmfit not to vary parameter
-# interpolate simulation data instead of exp. data
+# [ ] interpolate simulation temps into experimental positions instead of vice versa
+# [x] instead of holding constant, tell lmfit not to vary parameter
 
 def MakeLaserArrayGreatAgain(height, Nx, Nx_beam, atten, Q, r_beam, power_offset):
     '''construct array of power density values for an irradiated cross-section'''
@@ -146,7 +146,7 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
 
     return output_temperatures, side_temperatures, top_temperatures
 
-def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air):
+def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air, FLIR_measure_depth):
 
     #############################
     ###       PARAMETERS      ###
@@ -192,7 +192,8 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
         dt = dt_CFL_convection
 
     global output_times
-    output_times = [0, 5, 15, 20, 30, 60]
+    output_times = [0, 5]
+
 
     #############################
     ###       SIM MAIN        ###
@@ -201,7 +202,7 @@ def main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_m
     q_beam, _ = MakeLaserArrayGreatAgain(height, Nx, Nx_beam, abs_coeff, Q, r_beam, power_offset)
     q = FillArray(Nx, q_beam, Nx_beam)
     time_index_map = create_time_index_map(output_times, dt)
-    _, side_temperatures, top_temperatures = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map)
+    _, side_temperatures, top_temperatures = Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2ps, q, h_conv, T_air, time_index_map, FLIR_measure_depth)
 
     return side_temperatures, top_temperatures, time_index_map
 
@@ -219,19 +220,20 @@ def objective(params):
     loop_n += 1
 
     # Extract parameters
-    h_conv = 10 # params['h_conv'].value
+    h_conv = params['h_conv'].value
     conductivity_modifier_inner = params['conductivity_modifier_inner'].value # REAL1 = 50
     conductivity_modifier_outer = params['conductivity_modifier_outer'].value # REAL1 = 20
-    abs_modifier_inner = 2.2e6 #params['abs_modifier_inner'].value #prev. 1e7
-    abs_modifier_outer = 10 #params['abs_modifier_outer'].value #prev. 10
+    abs_modifier_inner = params['abs_modifier_inner'].value #prev. 1e7
+    abs_modifier_outer = params['abs_modifier_outer'].value #prev. 10
     power_offset = params['power_offset'].value # REAL1 = 1.77
     r_beam = params['r_beam'].value # REAL1 = 0.0125
     T_air = params['T_air'].value
+    FLIR_measure_depth = params['FLIR_measure_depth'].value
 
     print(params)
 
     # Calculate residuals
-    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air)
+    side_temperatures, top_temperatures, time_index_map  = main(h_conv, conductivity_modifier_inner, conductivity_modifier_outer, abs_modifier_inner, abs_modifier_outer, power_offset, r_beam, T_air, FLIR_measure_depth)
     
     residuals = {}
     for time in output_times:
@@ -288,7 +290,7 @@ global_residuals = []
 
 global Nx, Ny, output_times
 Nx = Ny = 50
-output_times = [0, 5]
+output_times = [0, 5, 15]
 
 # import experimental data
 exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')
@@ -315,14 +317,15 @@ params = Parameters()
 #                     r_beam = {'value':0.0125, 'min':0.010, 'max':0.015}, # best = 0.0125 +/- 1e5
 #                     T_air = {'value':20, 'min':15, 'max':30}
 #                     )
-params.add('h_conv', value=10, min=1, max=50, vary=True)
-params.add('conductivity_modifier_inner', value=20, min=1, max=1000, vary=True)
-params.add('conductivity_modifier_outer', value=10, min=1, max=100, vary=True)
-params.add('abs_modifier_inner', value=1e7, min=1e5, max=1e9 vary=False)
-params.add('abs_modifier_outer', value=10, min=5, max=15, vary=False)
-params.add('power_offset', value=1.77, min=0.5, max=2, vary=False)
-params.add('r_beam', value=0.0125, min=0.010, max=0.015, vary=False)
-params.add('T_air', value=20, min=15, max=30, vary=True)
+params.add('h_conv', value=10, min=9, max=11, vary=False)
+params.add('conductivity_modifier_inner', value=1000, min=990, max=1010, vary=False)
+params.add('conductivity_modifier_outer', value=35, min=30, max=40, vary=False)
+params.add('abs_modifier_inner', value=1.01e7, min=1e7, max=1.1e7, vary=False)
+params.add('abs_modifier_outer', value=9.88, min=5, max=11, vary=False)
+params.add('power_offset', value=1.85, min=1, max=2, vary=False)
+params.add('r_beam', value=0.0100, min=0.009, max=0.011, vary=False)
+params.add('T_air', value=24.2, min=20, max=25, vary=False)
+params.add('FLIR_measure_depth', value=1e-2, min=1e-4, max=2e-2, vary=True)
 
 result = minimize(objective, params)
 
