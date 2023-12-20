@@ -4,6 +4,7 @@ import time
 from scipy.stats import halfnorm
 from lmfit import minimize, Parameters, create_params, fit_report
 import pandas as pd
+from pathlib import Path
 
 '''
 This script is for running the simulation repeatedly to minimize residuals with experimental data and reading the lmfit report.
@@ -293,7 +294,8 @@ Nx = Ny = 50
 output_times = [0, 5, 15]
 
 # import experimental data
-exp_data = pd.read_csv(r'exports\CSVs\lmfit_consolidated\1e-6_70W_temperature_profile.csv')
+exp_data_path = Path('exports/CSVs/lmfit_consolidated/1e-6_70W_temperature_profile.csv')
+exp_data = pd.read_csv(exp_data_path)
 
 simulation_x_positions = np.linspace(0, 5, Nx)  # Assuming your grid spans 5 cm
 simulation_y_positions = np.linspace(0, 5, Ny)

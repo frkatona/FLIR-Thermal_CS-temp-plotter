@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import halfnorm
 import time
 import pandas as pd
+from pathlib import Path
 
 '''
 This script is for just running the simulation once, showing the associated graphs, and exporting the data to CSVs
@@ -234,7 +235,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     avg_temp_data.set_index('Distance_cm', inplace=True)
 
     # Save the DataFrame to a CSV file with distances included
-    export_path = f'exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv'
+    export_path = Path('exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv')
     avg_temp_data.to_csv(export_path, mode='w')
     print(f'Exported data to {export_path}')
 
