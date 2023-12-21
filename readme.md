@@ -50,8 +50,11 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## to-do
 
+- 12/20
+  - [ ] investigate why residuals seem to not change at all sometimes
+
 - 12/19
-  - [ ] implement FLIR measure depth
+  - [x] implement FLIR measure depth
 
 - 12/18
   - [ ] learn the pathlib library including Path() for compatibility with windows/unix filepaths
