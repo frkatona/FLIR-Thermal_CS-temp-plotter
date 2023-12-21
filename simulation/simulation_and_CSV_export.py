@@ -202,6 +202,8 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     measure_depth_index = int(FLIR_measure_depth / dx) * -1
     print(f'measure_depth_index: {measure_depth_index}')
 
+    max_temp_positions = {}
+
     for i, T_out in enumerate(output_temperatures):
         # Temperature distribution plot
         ax = axes[0, i]  # First row for the temperature distribution plot
@@ -211,13 +213,20 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
         ax.set_ylabel('y (m)')
         fig.colorbar(c, ax=ax, label='temperature (°C)', ticks=tick_values, fraction = 0.05)
 
+        # Add dotted horizontal line at the highest temperature
+        max_temp = np.max(T_out)
+        max_temp_index = np.unravel_index(np.argmax(T_out), T_out.shape)
+        max_temp_positions[output_times[i]] = max_temp_index
+        ax.axhline(max_temp_index[0] * dx, color='white', linestyle='dotted', label=f'max T = {max_temp:.2f} °C')
+
+
         # Average temperature across some depth from the top
         ax2 = axes[1, i]
         avg_depth_temp = np.mean(T_out[measure_depth_index:, :], axis=0)
-        ax2.plot(avg_depth_temp, label=f'avg T across {FLIR_measure_depth} m (top {measure_depth_index * -1} rows)')
-        ax2.set_title(f'T_ave across top {FLIR_measure_depth*100} cm at t = {output_times[i]} s')
-        ax2.set_xlabel('x index')
-        ax2.set_ylabel('Average Temperature (°C)')
+        ax2.plot(avg_depth_temp, label=f'avg T across {FLIR_measure_depth*1000} mm (top {measure_depth_index * -1} rows)')
+        # ax2.set_title(f'T_ave across top {FLIR_measure_depth*100} cm at t = {output_times[i]} s')
+        ax2.set_xlabel('depth index')
+        # ax2.set_ylabel('Average Temperature (°C)')
         ax2.legend()
 
         distances = [i * point_spacing for i in range(num_points)]
@@ -228,25 +237,49 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 
     plt.tight_layout()
     fig.suptitle(f'Temperature Distribution and Average of Top {FLIR_measure_depth * 100} cm for Q = {Q} W, Loading = {loading:.0e}, and Beam Radius = {r_beam} m')
-    plt.show()
 
     # Include the distances as the first column of the DataFrame
     avg_temp_data['Distance_cm'] = distances
     avg_temp_data.set_index('Distance_cm', inplace=True)
 
     # Save the DataFrame to a CSV file with distances included
-    export_path = Path('exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv')
+    export_path = Path(f'exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv')
     avg_temp_data.to_csv(export_path, mode='w')
     print(f'Exported data to {export_path}')
+
+    # Scatterplot of max temperature positions over time
+    max_temp_times = list(max_temp_positions.keys())
+    max_temp_indices = [pos[0] for pos in max_temp_positions.values()]
+    # create csv of max temp positions over time
+    export_path = Path(f'exports/CSVs/max_temp_positions/{Q}W_{loading}_max-temp-positions_{Nx}.csv')
+    max_temp_data = pd.DataFrame({'Time_s': max_temp_times, 'Position': max_temp_indices})
+    max_temp_data.to_csv(export_path, mode='w')
+    print(f'Exported max temp data to {export_path}')
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(max_temp_times, max_temp_indices)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Max Temperature Position')
+    plt.title('Max Temperature Positions over Time')
+
+    # # Fit a curve to the scatterplot
+    # curve_fit = np.polyfit(max_temp_times, max_temp_indices, 2)
+    # curve_func = np.poly1d(curve_fit)
+    # curve_x = np.linspace(min(max_temp_times), max(max_temp_times), 100)
+    # curve_y = curve_func(curve_x)
+    # plt.plot(curve_x, curve_y, color='red', label='Curve Fit')
+
+    plt.legend()
+    plt.show()
 
 #############################
 ###       PARAMETERS      ###
 #############################
 
-h_conv = 5 #9
-conductivity_modifier_inner = 20 #43
+h_conv = 5 #5
+conductivity_modifier_inner = 20 #20
 conductivity_modifier_outer =  10 #10
-abs_modifier_inner = 1e7 #2.2e6
+abs_modifier_inner = 1e7 #1e7
 abs_modifier_outer =  10 #10
 power_offset = 1.3 #1.84
 
@@ -257,7 +290,7 @@ T_air = 20.0  # Temperature of the surrounding air, °C
 Q = 70  # Total heat generation rate, W, (i.e., laser power)
 loading = 1e-6 # mass fraction of CB in PDMS, g/g
 r_beam = 0.0125 #0.0120
-FLIR_measure_depth = 0.05
+FLIR_measure_depth = 0.005 # FLIR thermal camera image depth, m
 
 PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
 PDMS_density_gpmL = 1.02
@@ -277,7 +310,8 @@ dt_CFL_convection = (dx**2 / (2 * PDMS_thermal_diffusivity_m2ps * ((h_conv * dx 
 if dt_CFL_convection < dt:
     dt = dt_CFL_convection
 
-output_times = [0, 5, 15, 20, 30, 60]
+# output_times = [0, 1, 2, 5, 10, 20, 40, 70, 90, 120]
+output_times = [1, 5, 10, 30, 60]
 
 #############################
 ###          MAIN         ###

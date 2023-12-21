@@ -27,7 +27,6 @@ The composite_analysis script found in the image_analysis directory takes the pa
 
 ## Simulation Pseudo-code
 
-
     temperatureArray = Init_T_Grid(length, height, ambientTemperature)
 
     powerMask = InitPowerMask(beamRadius, beamPower, attenuationCoefficient)
@@ -51,7 +50,13 @@ The composite_analysis script found in the image_analysis directory takes the pa
 ## to-do
 
 - 12/20
-  - [ ] investigate why residuals seem to not change at all sometimes
+  - [ ] investigate why residuals in graph seem to not change at all over several iterations sometimes
+  - [x] follow highest T point over time and show in graph (below)
+  - [x] fit to a curve (below)
+
+![hottest point depth visualization addition (12/20)](exports\images\readme_previews\simulation_hottest_line.png)
+
+![hottest point fit](exports\images\readme_previews\MaxTempChangeOverTime_70W_1e-6.png)
 
 - 12/19
   - [x] implement FLIR measure depth
