@@ -245,31 +245,21 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
     # Save the DataFrame to a CSV file with distances included
     export_path = Path(f'exports/CSVs/simulated_toprow/{Q}W_{loading}_top-row.csv')
     avg_temp_data.to_csv(export_path, mode='w')
-    print(f'Exported data to {export_path}')
 
     # Scatterplot of max temperature positions over time
     max_temp_times = list(max_temp_positions.keys())
     max_temp_indices = [pos[0] for pos in max_temp_positions.values()]
-    # create csv of max temp positions over time
     export_path = Path(f'exports/CSVs/max_temp_positions/{Q}W_{loading}_max-temp-positions_{Nx}.csv')
     max_temp_data = pd.DataFrame({'Time_s': max_temp_times, 'Position': max_temp_indices})
     max_temp_data.to_csv(export_path, mode='w')
-    print(f'Exported max temp data to {export_path}')
 
     plt.figure(figsize=(8, 6))
     plt.scatter(max_temp_times, max_temp_indices)
     plt.xlabel('Time (s)')
     plt.ylabel('Max Temperature Position')
     plt.title('Max Temperature Positions over Time')
-
-    # # Fit a curve to the scatterplot
-    # curve_fit = np.polyfit(max_temp_times, max_temp_indices, 2)
-    # curve_func = np.poly1d(curve_fit)
-    # curve_x = np.linspace(min(max_temp_times), max(max_temp_times), 100)
-    # curve_y = curve_func(curve_x)
-    # plt.plot(curve_x, curve_y, color='red', label='Curve Fit')
-
     plt.legend()
+
     plt.show()
 
 #############################
@@ -277,7 +267,7 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 #############################
 
 h_conv = 5 #5
-conductivity_modifier_inner = 20 #20
+conductivity_modifier_inner = 100 #20
 conductivity_modifier_outer =  10 #10
 abs_modifier_inner = 1e7 #1e7
 abs_modifier_outer =  10 #10
@@ -285,11 +275,10 @@ power_offset = 1.3 #1.84
 
 ## physical constants ##
 height = 0.05 # height of the simulation space, m
-T_0 = 25.0  # Temperature at t = 0, °C
-T_air = 20.0  # Temperature of the surrounding air, °C
+T_0 = T_air = 25 # Temperature at t = 0, °C
 Q = 70  # Total heat generation rate, W, (i.e., laser power)
 loading = 1e-6 # mass fraction of CB in PDMS, g/g
-r_beam = 0.0125 #0.0120
+r_beam = 0.0125 #0.0125
 FLIR_measure_depth = 0.005 # FLIR thermal camera image depth, m
 
 PDMS_thermal_conductivity_WpmK = conductivity_modifier_outer * (0.2 + (loading * conductivity_modifier_inner)) # TC theoretically should lerp between 0.2 and 0.3 over the loading range 0% to 10%
@@ -301,7 +290,7 @@ PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capa
 abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
 ## simulation parameters ##
-Nx = Ny = 50
+Nx = Ny = 150
 Nx_beam = int(Nx * (r_beam / height))
 dx = dy = height / (Nx - 1)
 M = 4e1
@@ -311,7 +300,7 @@ if dt_CFL_convection < dt:
     dt = dt_CFL_convection
 
 # output_times = [0, 1, 2, 5, 10, 20, 40, 70, 90, 120]
-output_times = [1, 5, 10, 30, 60]
+output_times = [0, 5, 15, 20, 30, 60]
 
 #############################
 ###          MAIN         ###
