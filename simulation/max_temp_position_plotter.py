@@ -37,7 +37,7 @@ print(result.fit_report())
 # Plot the data, fitted curve, and interpolated curve
 plt.figure(figsize=(8, 6))
 plt.scatter(df['Time_s'], df['Position'], label='Data')
-plt.plot(x_interp, y_interp, 'r--', label='Interpolated')
+plt.plot(x_interp, y_interp, 'r--', label='Exponential Fit')
 plt.xlabel('t (s)')
 plt.ylabel('height (cm)')
 plt.title(f'Max Temperature Position vs. Irradiation Time for P = {sample[0]}, loading = {sample[1]}')
