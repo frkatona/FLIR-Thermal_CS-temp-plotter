@@ -206,8 +206,11 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
 
     for i, T_out in enumerate(output_temperatures):
         # Temperature distribution plot
-        ax = axes[0, i]  # First row for the temperature distribution plot
+        # ax = axes[0, i]  # First row for the temperature distribution plot
+        plt.figure(figsize=(4, 4))  # New figure for each temperature distribution plot
+        ax = plt.gca()  # Get the current axes
         c = ax.imshow(T_out, extent=[0, height, 0, height], origin='lower', cmap=custom_cmap)
+
         ax.set_title(f't = {output_times[i]} s')
         ax.set_xlabel('x (m)')
         ax.set_ylabel('y (m)')
@@ -219,9 +222,11 @@ def Plot_T_Slices(output_temperatures, output_times, height, Q, loading, r_beam,
         max_temp_positions[output_times[i]] = max_temp_index
         ax.axhline(max_temp_index[0] * dx, color='white', linestyle='dotted', label=f'max T = {max_temp:.2f} °C')
 
-
         # Average temperature across some depth from the top
-        ax2 = axes[1, i]
+        # ax2 = axes[1, i]
+        plt.figure(figsize=(4, 4))  # New figure for each average temperature plot
+        ax2 = plt.gca()  # Get the current axes
+    
         avg_depth_temp = np.mean(T_out[measure_depth_index:, :], axis=0)
         ax2.plot(avg_depth_temp, label=f'avg T across {FLIR_measure_depth*1000} mm (top {measure_depth_index * -1} rows)')
         # ax2.set_title(f'T_ave across top {FLIR_measure_depth*100} cm at t = {output_times[i]} s')
@@ -290,7 +295,7 @@ PDMS_thermal_diffusivity_m2ps = PDMS_thermal_conductivity_WpmK / (PDMS_heat_capa
 abs_coeff = abs_modifier_outer * (0.01 + (loading * abs_modifier_inner)) # abs theoretically should lerp between 0.01 and ~500 over the loading range of 0% to 10%
 
 ## simulation parameters ##
-Nx = Ny = 150
+Nx = Ny = 200
 Nx_beam = int(Nx * (r_beam / height))
 dx = dy = height / (Nx - 1)
 M = 4e1
