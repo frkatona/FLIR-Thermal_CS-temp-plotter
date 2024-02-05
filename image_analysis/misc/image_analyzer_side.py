@@ -115,6 +115,6 @@ def plot_data(data_list, times):
     plt.show()
 
 # Run the functions
-folder_path = r'txt-inputs\lmfit_txts\txts_side\1e-4_5W'  # Replace with your folder path
+folder_path = r'input_txts\lmfit_txts\txts_side\1e-6_70W'  # Replace with your folder path
 data_list, times = load_data_from_folder(folder_path)
 plot_data(data_list, times)

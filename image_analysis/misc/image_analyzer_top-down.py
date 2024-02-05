@@ -8,7 +8,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import csv
 
 ## folder paths ##
-folder_path = r'txt-inputs\lmfit_txts\txts_side\1e-4_5W'
+folder_path = r'C:\Users\antho\OneDrive\Code\FLIR-Thermal_CS-temp-plotter\input_txts\lmfit_txts\txts_top\1e-6_70W'
 folder_name = os.path.basename(os.path.normpath(folder_path))
 output_csv_path = f'exports\csv_outputs\{folder_name}_scatterplot_data.csv'
 
@@ -112,15 +112,15 @@ times = [int(txt_file.split('.')[0]) for txt_file in txt_files]
 popt, _ = curve_fit(log_func, times, max_values)
 y_pred = log_func(np.array(times), *popt)
 
-## include threshold distances in CSV export ##
-with open(output_csv_path, 'w', newline='') as csvfile:
-    csvwriter = csv.writer(csvfile)
+# ## include threshold distances in CSV export ##
+# with open(output_csv_path, 'w', newline='') as csvfile:
+#     csvwriter = csv.writer(csvfile)
     
-    # Modified header to include threshold distances
-    csvwriter.writerow(["time (s)", "change in max temperature (C)", "68.2% Distance (cm)", "95.4% Distance (cm)"]) 
+#     # Modified header to include threshold distances
+#     csvwriter.writerow(["time (s)", "change in max temperature (C)", "68.2% Distance (cm)", "95.4% Distance (cm)"]) 
     
-    for t, max_val, distances in zip(times, max_values, threshold_data):
-        csvwriter.writerow([t, max_val, distances[0], distances[1]])
+#     for t, max_val, distances in zip(times, max_values, threshold_data):
+#         csvwriter.writerow([t, max_val, distances[0], distances[1]])
 
 print(f"Data exported to {output_csv_path}")
 

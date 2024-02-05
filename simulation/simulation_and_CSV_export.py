@@ -164,7 +164,6 @@ def Compute_T(output_times, Nx, Ny, T_0, dt, dx, dy, PDMS_thermal_diffusivity_m2
         if n in output_indices:
             output_temperatures.append(T.copy())
             print(f'Computed T at t = {n * dt:.2f} s ({n} / {max(output_indices)})')
-           
     return output_temperatures
 
 def Preview_Decay(q, Q, height, transmittance, abs_coeff, dt, M):
