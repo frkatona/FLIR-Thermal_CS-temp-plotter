@@ -18,31 +18,8 @@ def read_temperature_data(file_path):
 
 def display_thermal_images_with_lines(files, folder_path, direction, length, cm_per_pixel, title, search_square):
     '''display temperature data as thermal images with superimposed lines showing where the data will be extracted for plotting'''
-    # Determine the number of images
-    num_images = len(files)
-    
-    # Order the files by the time extracted from the filename (assumes format is "<time>.txt")
-    files_sorted = sorted(files, key=lambda x: int(x.split('.')[0]))
-    
-    # Get the position of the line from the '5.txt' image
-    file_5_path = os.path.join(folder_path, '5.txt')
-    temp_data_5 = read_temperature_data(file_5_path)
-    max_index_5 = np.unravel_index(np.argmax(temp_data_5, axis=None), temp_data_5.shape)
-
-    # Setup the subplot grid
-    ncols = 4  # You can adjust this as per your display requirements
-    nrows = num_images // ncols + (num_images % ncols > 0)
-    
-    # Create a figure to hold all subplots
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 5, nrows * 5))
-    full_title = f'{title} ({condition})'
-    fig.suptitle(full_title, fontsize=16)  # Set the overall title for the window
-    
-    # Flatten the axes array for easy iteration
-    axes_flat = axes.flatten()
-    
-    # Loop through each file and plot it on the respective subplot
-    for i, filename in enumerate(files_sorted):
+    # Loop through each file and plot it in a separate window
+    for i, filename in enumerate(files):
         file_path = os.path.join(folder_path, filename)
         temp_data = read_temperature_data(file_path)
         
@@ -66,18 +43,21 @@ def display_thermal_images_with_lines(files, folder_path, direction, length, cm_
             end_index = min(max_index[0] + length, temp_data.shape[0])
             profile_line = ([max_index[1], max_index[1]], [max_index[0], end_index])
         
-        # Plot the thermal image and the profile line
-        ax = axes_flat[i]
+        # Create a new figure and plot the thermal image and the profile line
+        fig, ax = plt.subplots(figsize=(8, 6))
         ax.imshow(smoothed_data, cmap='hot', interpolation='nearest')
         ax.plot(profile_line[0], profile_line[1], 'b-', linewidth=2)
-        ax.set_title(f'{filename}')
-    
-    for j in range(i + 1, len(axes_flat)):
-        axes_flat[j].axis('off')
+        # ax.set_title(f'{filename}')
+        # ax.set_xlabel('X')
+        # ax.set_ylabel('Y')
+        # show the temperature color map legend
+        cbar = plt.colorbar(ax.imshow(smoothed_data, cmap='hot', interpolation='nearest'), ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Temperature (°C)')
+        # remove ticks
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-    # Adjust layout to prevent overlapping
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.95)  # Adjust the top padding to make space for the overall title
+
 
 def process_files(files, extract_path, direction, length, cm_per_pixel, search_square):
     '''process temperature FLIR image files extracted from ImageJ and extract temperature profiles within a 10x10 search square'''
@@ -109,7 +89,7 @@ def process_files(files, extract_path, direction, length, cm_per_pixel, search_s
 def plot_temperature_profiles(files, profiles, title, condition):
     '''plot the temperature profiles from the top and side views from each time as scatterplots--one for each view'''
     fig, ax = plt.subplots(figsize=(12, 6))
-    cmap = LinearSegmentedColormap.from_list('custom blue', [(0, 'lightblue'), (1, 'darkblue')], N=256)
+    cmap = LinearSegmentedColormap.from_list('custom red', [(0, 'lightcoral'), (1, 'darkred')], N=256)
     cmap_adjusted = cmap(np.linspace(0.2, 1, 256))
 
     # Combine files and profiles into a list of tuples and sort by time extracted from filenames
@@ -119,7 +99,8 @@ def plot_temperature_profiles(files, profiles, title, condition):
     for i, (filename, (cm_indices, profile)) in enumerate(combined):
         time = int(filename.split('.')[0])
         color = cmap_adjusted[int(i / len(combined) * 256)]
-        ax.plot(cm_indices, profile, color=color, label=f'{time}s', marker='o', markersize=5, linestyle='-')  # Add line with markers
+        ax.plot(cm_indices, profile, color=color, label=f'{time}s', marker='o', markersize=15, linestyle='-')  # Add line with markers
+        
 
     # Include the condition in the title
     full_title = f'{title} ({condition})'
