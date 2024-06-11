@@ -38,18 +38,16 @@ plt.figure(figsize=(14, 8))
 # Scatter plot for data from file1
 for i, (time, row) in enumerate(df_experimental_top.iterrows()):
     color = colors[i % len(colors)]
-    plt.scatter(x_vales_experimental, row.values, color=color, alpha=0.9, label=f'experimental {time}s', marker='o', s = 400)
+    plt.scatter(x_vales_experimental, row.values, color=color, alpha=0.9, label=f'experimental {time}s', marker='o')
 
 # Line plot for data from file2 with thicker lines
 for i, (time, row) in enumerate(top_data2.iterrows()):
     color = colors[i % len(colors)]
-    plt.plot(x_values_file2, row.values, color=color, alpha=0.7, linewidth=5, label=f'simulation {time}')
+    plt.plot(x_values_file2, row.values, color=color, alpha=0.7, linewidth=3, label=f'simulation {time}')
 
 # Customize the plot
-plt.xlabel('distance from center (cm)', fontsize=40)
-plt.ylabel('temperature (°C)', fontsize=40)
-plt.xticks(fontsize=30)
-plt.yticks(fontsize=30)
-# plt.title(f'Experimental vs. Simulated Temperature Profile for {simulation_path.name}')
+plt.xlabel('Position (cm)')
+plt.ylabel('Temperature (°C)')
+plt.title(f'Experimental vs. Simulated Temperature Profile for {simulation_path.name}')
 plt.legend()
 plt.show()
